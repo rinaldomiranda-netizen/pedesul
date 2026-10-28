@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f2a3d">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel | Pede Sul</title>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/marca/icone_32.png">
+<link rel="apple-touch-icon" href="assets/marca/icone_180.png">
+<link rel="manifest" href="manifest-painel.webmanifest">
+<link rel="stylesheet" href="css/pedesul.css">
+<link rel="stylesheet" href="css/painel.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@500;600&family=Pacifico&display=swap">
+</head>
+<body class="painel">
+<div id="faixas"></div>
+<header class="topo nao-imprimir">
+  <div class="container">
+    <span class="marca"><span class="marca-selo" aria-hidden="true"><img src="assets/marca/icone_192.png" alt=""></span><span class="marca-texto"><strong>Painel</strong><small id="quem">Área da equipe</small></span></span>
+    <button class="btn btn-linha btn-peq oculto" type="button" id="btn-sair" data-acao="sair">Sair</button>
+  </div>
+</header>
+<nav class="painel-nav nao-imprimir oculto" id="nav" aria-label="Seções do painel"></nav>
+<main class="container painel-conteudo" id="conteudo" aria-live="polite">
+  <div class="estado">Carregando…</div>
+</main>
+<div id="janela-raiz"></div>
+<div id="area-impressao" class="so-imprimir"></div>
+
+<script src="js/config.js"></script>
+<script src="js/nucleo.js"></script>
+<script src="js/dados-demo.js"></script>
+<script src="js/plataforma.js"></script>
+<script src="js/backend.js"></script>
+<script src="js/qrcode.min.js"></script>
+<script src="js/prazo.js"></script>
+<script src="js/pix.js"></script>
+<script src="js/post-dia.js"></script>
+<script src="js/painel.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

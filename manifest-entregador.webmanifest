@@ -1,0 +1,14 @@
+{
+  "name": "Pede Sul - Entregador",
+  "short_name": "Entregador",
+  "start_url": "./entregador.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c1c27",
+  "theme_color": "#0f2a3d",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "assets/marca/icone_192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/marca/icone_512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

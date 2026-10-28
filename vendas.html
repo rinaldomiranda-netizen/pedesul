@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f2a3d">
+<meta name="description" content="Coloque sua loja no Pede Sul, o delivery da Zona Sul de Aracaju, sem comissão por pedido. Ou tenha o sistema com a sua marca. RMD Delivery.">
+<title>Sua loja no Pede Sul | RMD Delivery</title>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/marca/icone_32.png">
+<link rel="stylesheet" href="css/pedesul.css">
+<link rel="stylesheet" href="css/vendas.css">
+</head>
+<body class="vendas">
+<header class="topo">
+  <div class="container">
+    <a class="marca" href="index.html"><span class="marca-texto"><strong>pede<span style="color:var(--ouro)">sul</span></strong><small>para lojas · RMD Delivery</small></span></a>
+    <a class="btn btn-ouro btn-peq" href="#inscricao">Quero minha vaga</a>
+  </div>
+</header>
+
+<main>
+  <section class="v-heroi container">
+    <h1>Sua loja no Pede Sul, <span>sem comissão por pedido</span></h1>
+    <p>Dois jeitos: a sua loja aparece na vitrine do Pede Sul junto com as outras lojas da Zona Sul, ou você recebe o sistema com a sua marca e o seu endereço. Nos dois: cardápio com QR Code, entrega, retirada e mesa, caixa, garçom, cozinha, entregador no celular e o post do cardápio do dia para o Status.</p>
+    <div class="barra-acoes">
+      <a class="btn btn-ouro" href="#inscricao">Garantir a promoção</a>
+      <a class="btn btn-linha" href="#demonstracao">Ver funcionando</a>
+    </div>
+  </section>
+
+  <section class="container">
+    <div class="v-promo" id="promo">
+      <div class="v-promo-selo">LANÇAMENTO</div>
+      <h2>Os <span data-promo="vagas">5</span> primeiros restaurantes levam o plano <b>Completo</b> pelo preço do <b>Essencial</b></h2>
+      <div class="v-precos">
+        <div><small>Plano Completo</small><s data-promo="cheio">R$ 229,90</s></div>
+        <div class="v-preco-promo"><small>Para os 5 primeiros</small><strong data-promo="preco">R$ 79,90</strong><small>/mês</small></div>
+        <div class="v-preco-inicio"><small>Nos <span data-promo="meses">3</span> primeiros meses</small><strong data-promo="inicio">R$ 39,95</strong><small>/mês</small></div>
+      </div>
+      <div class="v-vagas" aria-live="polite">
+        <div class="v-bolinhas" id="bolinhas" aria-hidden="true"></div>
+        <p id="texto-vagas">Consultando vagas…</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="container">
+    <h2 class="v-titulo">Planos</h2>
+    <div class="grade v-planos" id="planos"></div>
+    <p class="v-nota" id="nota-implantacao"></p>
+  </section>
+
+  <section class="container" id="demonstracao">
+    <h2 class="v-titulo">Veja funcionando</h2>
+    <p class="v-nota">Demonstração com lojas e pedidos de exemplo, guardados só no seu aparelho. Pode mexer à vontade.</p>
+    <div class="v-demos">
+      <a class="caixa" href="index.html?demo=1" target="_blank" rel="noopener"><b>🏖️ Vitrine Pede Sul</b><span>Todas as lojas da Zona Sul</span></a>
+      <a class="caixa" href="loja.html?loja=conis-burger&amp;demo=1" target="_blank" rel="noopener"><b>📱 Cardápio do cliente</b><span>Como o cliente faz o pedido</span></a>
+      <a class="caixa" href="painel.html?loja=conis-burger&amp;demo=1" target="_blank" rel="noopener"><b>🖥️ Painel da loja</b><span>Pedidos, caixa, mesas e cardápio</span></a>
+      <a class="caixa" href="cozinha.html?loja=conis-burger&amp;demo=1" target="_blank" rel="noopener"><b>👨‍🍳 Cozinha</b><span>Fila do que preparar</span></a>
+      <a class="caixa" href="entregador.html?loja=conis-burger&amp;demo=1" target="_blank" rel="noopener"><b>🛵 Entregador</b><span>Ofertas e entregas no celular</span></a>
+    </div>
+  </section>
+
+  <section class="container" id="inscricao">
+    <form class="caixa v-form" id="form-inscricao" novalidate>
+      <h2 style="margin-top:0">Garanta sua vaga</h2>
+      <p class="v-nota" style="margin-top:0">A vaga é marcada na hora, pela ordem de inscrição. Depois a RMD chama você no WhatsApp para combinar a implantação.</p>
+      <div class="campo"><label for="i-restaurante">Nome da loja *</label><input id="i-restaurante" maxlength="80" autocomplete="organization" required></div>
+      <div class="campo"><label for="i-nome">Seu nome *</label><input id="i-nome" maxlength="60" autocomplete="name" required></div>
+      <div class="campo"><label for="i-whats">WhatsApp com DDD *</label><input id="i-whats" maxlength="20" inputmode="tel" autocomplete="tel" placeholder="(79) 99999-9999" required></div>
+      <div class="campo"><label for="i-cidade">Cidade</label><input id="i-cidade" maxlength="60" autocomplete="address-level2"></div>
+      <div class="campo"><label for="i-plano">Plano de interesse</label><select id="i-plano"></select><span class="ajuda" id="ajuda-plano"></span></div>
+      <div id="msg-form" role="alert"></div>
+      <button class="btn btn-ouro btn-bloco" type="submit" id="btn-inscrever">Garantir minha vaga</button>
+    </form>
+    <div class="caixa v-ok oculto" id="resultado" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="container v-rodape">
+  <b>Pede Sul · RMD Delivery</b> · WhatsApp <a id="link-whats" href="#" target="_blank" rel="noopener">(79) 98865-3766</a>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/nucleo.js"></script>
+<script src="js/planos-rmd.js"></script>
+<script src="js/vendas.js"></script>
+</body>
+</html>

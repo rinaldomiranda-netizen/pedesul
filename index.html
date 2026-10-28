@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f2a3d">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Pede Sul: as lojas da Zona Sul de Aracaju num app só. Peça para entregar, retirar ou comer na loja.">
+<title>Pede Sul | O sabor da Zona Sul na sua porta</title>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/marca/icone_32.png">
+<link rel="apple-touch-icon" href="assets/marca/icone_180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="css/pedesul.css">
+<link rel="stylesheet" href="css/vitrine.css">
+</head>
+<body class="vitrine">
+<div id="faixas"></div>
+<header class="v-topo">
+  <div class="container v-topo-in">
+    <a href="index.html" class="v-marca" aria-label="Pede Sul — início">
+      <svg viewBox="0 0 230 56" width="180" height="44" role="img" aria-hidden="true">
+        <defs><clipPath id="pino"><path d="M32 3C17.6 3 6 14.4 6 28.6 6 47 32 69 32 69s26-22 26-40.4C58 14.4 46.4 3 32 3z"/></clipPath></defs>
+        <g transform="scale(.78) translate(0,2)">
+          <path d="M32 3C17.6 3 6 14.4 6 28.6 6 47 32 69 32 69s26-22 26-40.4C58 14.4 46.4 3 32 3z" fill="#F2552C"/>
+          <g clip-path="url(#pino)"><circle cx="32" cy="31" r="11" fill="#FFB627"/>
+            <path d="M0 33c6 0 8-4 16-4s10 4 16 4 8-4 16-4 10 4 16 4v40H0z" fill="#0E7C86"/>
+            <path d="M0 42c6 0 8-4 16-4s10 4 16 4 8-4 16-4 10 4 16 4v40H0z" fill="#0B5A62"/></g>
+        </g>
+        <text x="56" y="41" font-family="Bricolage Grotesque, Trebuchet MS, sans-serif" font-weight="800" font-size="40" letter-spacing="-1" fill="#FFF4E6">pede<tspan fill="#F2552C">sul</tspan></text>
+      </svg>
+    </a>
+    <a class="btn btn-linha btn-peq" href="vendas.html">Tenho uma loja</a>
+  </div>
+</header>
+
+<main>
+  <!-- Faixa de propagandas: lojas, promoções, destaques e patrocinadores (cadastrados pela RMD). Passa sozinha. -->
+  <section class="v-anuncios" id="v-anuncios" aria-roledescription="carrossel" aria-label="Promoções e destaques" hidden>
+    <div class="container">
+      <div class="v-an-trilho" id="v-an-trilho" aria-live="off"></div>
+      <div class="v-an-pontos" id="v-an-pontos"></div>
+    </div>
+  </section>
+  <section class="v-heroi">
+    <div class="container">
+      <h1>O sabor da Zona Sul <em>na sua porta.</em></h1>
+      <p>Atalaia, Coroa do Meio, Farolândia, Aruana, Jardins, Grageru, Inácio Barbosa e mais. Escolha a loja, peça e acompanhe.</p>
+      <label class="busca"><span class="sr">Buscar loja ou prato</span><input type="search" id="v-busca" placeholder="Buscar loja ou tipo de comida…" autocomplete="off"></label>
+    </div>
+  </section>
+  <div class="container">
+    <nav class="chips" id="v-chips" aria-label="Tipos de loja"></nav>
+    <h2 class="v-titulo">Lojas da Zona Sul</h2>
+    <div class="v-lojas" id="v-lojas" aria-live="polite"><div class="esqueleto"></div><div class="esqueleto"></div></div>
+  </div>
+</main>
+
+<footer class="rodape">
+  <p><strong>Pede Sul</strong> · O sabor da Zona Sul na sua porta.</p>
+  <p>Cada loja prepara, entrega e recebe o seu pedido. O Pede Sul reúne as lojas num lugar só.</p>
+  <p><a href="vendas.html">Quero minha loja no Pede Sul</a> · <a href="rmd.html">Área do desenvolvedor</a></p>
+  <p>Desenvolvido por RMD Delivery · Aracaju, Sergipe</p>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/nucleo.js"></script>
+<script src="js/dados-demo.js"></script>
+<script src="js/plataforma.js"></script>
+<script src="js/backend.js"></script>
+<script src="js/vitrine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

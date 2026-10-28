@@ -1,0 +1,139 @@
+/* Painel interno do Mini Delivery Aterrisse */
+.painel-nav { position: sticky; top: 64px; z-index: 15; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 8px 16px; background: #0e1f2b; border-bottom: 1px solid #1a364b; }
+.painel-nav::-webkit-scrollbar { display: none; }
+.painel-nav button { flex: none; min-height: 42px; padding: 8px 14px; border-radius: 999px; border: 1px solid #2a4963; background: #10222f; font-weight: 700; font-size: 14px; white-space: nowrap; }
+.painel-nav button[aria-current="page"] { background: var(--ouro); color: #0d1e29; border-color: var(--ouro); }
+.painel-nav .badge-novo { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: 4px; padding: 0 5px; border-radius: 10px; background: var(--erro); color: #fff; font-size: 12px; }
+.painel-conteudo { padding-top: 18px; padding-bottom: 60px; }
+/* Celular: abas do painel em grade, todas visíveis (sem rolar para o lado). */
+@media (max-width: 767px) {
+  .painel-nav { position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+  .painel-nav button { min-height: 40px; padding: 6px 4px; font-size: 13px; white-space: normal; line-height: 1.15; border-radius: 12px; }
+  .pedido-linha .lado { min-width: 0; }
+  .tabela { font-size: 13px; }
+}
+.painel-conteudo h2 { margin: 0 0 12px; font-size: 22px; }
+.painel-conteudo h3 { margin: 18px 0 8px; font-size: 17px; color: var(--ouro-2); }
+.cartoes-resumo { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+.cartao-num { background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--raio); padding: 14px; }
+.cartao-num span { display: block; font-size: 13px; color: var(--texto-2); }
+.cartao-num strong { font-size: 24px; color: var(--ouro); }
+.caixa { background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--raio); padding: 14px; margin-bottom: 14px; }
+.barra-acoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.barra-acoes .entrada { width: auto; flex: 1; min-width: 150px; }
+.lista-pedidos { display: grid; gap: 10px; }
+.pedido-linha { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center; text-align: left; width: 100%; background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--raio); padding: 12px; }
+.pedido-linha:hover { border-color: var(--ouro); }
+.pedido-linha .num { font-size: 22px; font-weight: 900; color: var(--ouro); }
+.pedido-linha .info { min-width: 0; }
+.pedido-linha .info b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pedido-linha .info small { color: var(--texto-2); }
+.pedido-linha .lado { text-align: right; }
+.status { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.st-RECEBIDO { background: #5a1e16; color: #ffd0c9; }
+.st-ACEITO { background: #4a3508; color: #ffe08a; }
+.st-EM_PREPARACAO { background: #4a2a08; color: #ffc27a; }
+.st-PRONTO { background: #173a22; color: #a7e3b6; }
+.st-SAIU_PARA_ENTREGA { background: #13314a; color: #a8d4ff; }
+.st-ENTREGUE, .st-CONCLUIDO { background: #22301f; color: #c9e6c0; }
+.st-CANCELADO { background: #333; color: #bbb; text-decoration: line-through; }
+.colunas { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.ticket { background: #fffaf0; color: #0b1620; border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.ticket h4 { margin: 0 0 6px; font-size: 20px; }
+.ticket ul { margin: 6px 0; padding-left: 18px; font-size: 17px; }
+.ticket .obs { background: #ffe9b3; border-radius: 6px; padding: 4px 8px; font-weight: 700; margin: 4px 0; }
+.ticket .btn { margin-top: 8px; }
+.tabela { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabela th, .tabela td { padding: 8px 6px; border-bottom: 1px solid var(--linha); text-align: left; vertical-align: top; }
+.tabela th { color: var(--texto-2); font-weight: 700; }
+.rolagem-x { overflow-x: auto; }
+.prod-adm { display: grid; grid-template-columns: 42px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--linha); }
+.prod-adm .ic { font-size: 28px; text-align: center; }
+.prod-adm .acoes-prod { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.grupo-editor { border: 1px dashed #3b5e7a; border-radius: 12px; padding: 10px; margin-bottom: 10px; }
+.opcao-editor { display: grid; grid-template-columns: 1fr 90px auto auto; gap: 6px; align-items: center; margin-bottom: 6px; }
+.opcao-editor input[type=text], .opcao-editor input[type=number] { min-height: 40px; padding: 6px 8px; border-radius: 8px; border: 1px solid #33546e; background: #0b1a24; width: 100%; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; min-height: 40px; }
+.chk input { width: 20px; height: 20px; accent-color: var(--ouro); }
+.qr-area { background: #fff; color: #111; border-radius: 16px; padding: 18px; text-align: center; max-width: 360px; margin: 0 auto; }
+.qr-area svg { width: 100%; height: auto; max-width: 260px; }
+.qr-area h3 { color: #111; margin: 0 0 4px; }
+.aviso-caixa { background: #3b2a06; color: var(--aviso); border: 1px solid #7a5a12; border-radius: 12px; padding: 10px 12px; margin: 10px 0; font-size: 14px; }
+.erro-caixa { background: #3a1814; color: #ffd0c9; border: 1px solid #8e3b33; border-radius: 12px; padding: 10px 12px; margin: 10px 0; font-size: 14px; }
+.ok-caixa { background: #173a22; color: #c9f0d4; border: 1px solid #2f6a40; border-radius: 12px; padding: 10px 12px; margin: 10px 0; font-size: 14px; }
+.login { max-width: 420px; margin: 30px auto; }
+.so-imprimir { display: none; }
+@media (min-width: 720px) {
+  .cartoes-resumo { grid-template-columns: repeat(4, 1fr); }
+  .colunas { grid-template-columns: 1fr 1fr; }
+}
+/* computador: tela toda — pedidos em 2 colunas e, na cozinha, vários tickets lado a lado em cada coluna */
+@media (min-width: 1200px) {
+  .lista-pedidos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }
+  .colunas > section { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; align-content: start; }
+  .colunas > section > h3, .colunas > section > .vazio { grid-column: 1 / -1; }
+  .colunas > section > .ticket { margin-bottom: 0; }
+}
+@media print {
+  body { background: #fff; color: #000; }
+  body > *:not(#area-impressao) { display: none !important; }
+  #area-impressao { display: block !important; }
+  .cartaz-qr { text-align: center; font-family: Arial, sans-serif; padding: 30px; }
+  .cartaz-qr h1 { font-size: 34px; margin: 0 0 6px; }
+  .cartaz-qr p { font-size: 20px; margin: 8px 0; }
+  .cartaz-qr svg { width: 9cm; height: 9cm; }
+}
+.st-TESTE { background: #3b2a06; color: var(--aviso); border: 1px dashed #8a6d20; }
+.pedido-linha .info small { display: block; }
+.cartao-num { min-width: 0; }
+.cartao-num strong { display: block; overflow-wrap: anywhere; font-size: clamp(18px, 5.5vw, 24px); }
+
+/* Post do dia (Status do WhatsApp): formulário e prévia lado a lado; no celular, um embaixo do outro */
+.post-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 16px; align-items: start; }
+.post-previa { position: sticky; top: 12px; }
+.post-previa canvas { width: 100%; height: auto; aspect-ratio: 9 / 16; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.45); background: #222; display: block; }
+@media (max-width: 760px) { .post-grade { grid-template-columns: minmax(0, 1fr); } .post-previa { position: static; max-width: 340px; margin: 0 auto; } }
+/* Cardápio do dia: botões grandes de tem e não tem */
+.dia-caixa { border: 2px solid var(--ouro); }
+.dia-ajuda { color: var(--texto-2); font-size: 14px; margin-top: 0; }
+.dia-cat { margin: 14px 0 4px; color: var(--creme); }
+.dia-grupo { padding: 10px 0; border-top: 1px solid var(--linha); }
+.dia-nome { font-weight: 700; margin-bottom: 8px; }
+.dia-nome small { font-weight: 400; color: var(--texto-2); }
+.dia-opcoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.dia-op { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--linha); background: rgba(0, 0, 0, .25); color: var(--texto-2); font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
+.dia-op b { font-weight: 600; }
+.dia-op em { margin-left: auto; font-style: normal; font-size: 12px; }
+.dia-op.tem { border-color: var(--ok); color: var(--texto); background: rgba(76, 207, 126, .12); }
+.dia-op:not(.tem) b { text-decoration: line-through; }
+.dia-novo { display: flex; gap: 8px; margin-top: 8px; }
+.dia-novo input { flex: 1; min-width: 0; }
+
+/* Pede Sul — montar pedido (balcão e garçom), mesas e comanda impressa (do CONIS) */
+.montar-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; }
+.montar-prod { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 8px 10px; border-radius: 12px;
+  border: 1px solid var(--linha); background: var(--cartao); color: var(--texto); font: inherit; font-size: 14px; text-align: left; }
+.montar-prod b { color: var(--ouro-2); white-space: nowrap; }
+.montar-prod:hover { border-color: var(--ouro); }
+.mesas-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.mesa-cartao { display: grid; gap: 2px; min-height: 96px; padding: 12px; border-radius: 16px; border: 2px solid var(--linha); background: var(--cartao);
+  color: var(--texto); font: inherit; text-align: left; align-content: start; }
+.mesa-cartao b { font-size: 18px; }
+.mesa-cartao small { color: var(--texto-2); }
+.mesa-cartao.ocupada { border-color: var(--ouro); background: rgba(242, 85, 44, .12); }
+.mesa-cartao.ocupada span { font-size: 20px; font-weight: 800; color: var(--ouro-2); }
+@media print {
+  .comanda { width: 72mm; font-family: Arial, sans-serif; font-size: 12px; color: #000; }
+  .comanda h1 { font-size: 16px; margin: 0 0 4px; }
+  .comanda p { margin: 4px 0; }
+  .comanda hr { border: 0; border-top: 1px dashed #000; }
+}
+/* tela do entregador: botão de trabalho e oferta de entrega */
+.trabalho { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 2px solid var(--linha); }
+.trabalho.ligado { border-color: var(--ok); }
+.trabalho small { color: var(--texto-2); }
+.oferta-caixa { border: 2px solid var(--ouro); background: rgba(242, 85, 44, .1); }
+/* área do desenvolvedor: cartão de cada loja */
+.dev-loja-cab { display: flex; gap: 12px; align-items: flex-start; }
+.dev-logo { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; font-size: 26px; flex: none; }
+.dev-loja h4 { margin: 14px 0 6px; }

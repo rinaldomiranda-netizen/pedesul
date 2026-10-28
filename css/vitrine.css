@@ -1,0 +1,49 @@
+/* Pede Sul — vitrine com todas as lojas (usa as cores de pedesul.css). */
+.vitrine { font-family: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+.vitrine h1, .vitrine h2 { font-family: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif; text-wrap: balance; }
+.v-topo { background: var(--carvao-2); border-bottom: 1px solid var(--linha); position: sticky; top: 0; z-index: 20; }
+.v-topo-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; }
+.v-marca { display: inline-flex; }
+.v-marca svg { display: block; max-width: 100%; height: auto; }
+.v-heroi { background: var(--carvao-2); padding: 18px 0 26px;
+  background-image: radial-gradient(120% 70px at 50% 100%, var(--madeira) 0 55%, transparent 56%); background-repeat: no-repeat; background-position: bottom; }
+.v-heroi h1 { font-size: clamp(28px, 7vw, 44px); line-height: 1.08; margin: 6px 0 8px; color: var(--creme); }
+.v-heroi h1 em { font-style: normal; color: var(--laranja); }
+.v-heroi p { color: var(--texto-2); margin: 0 0 14px; max-width: 60ch; }
+.v-heroi .busca { margin-bottom: 18px; }
+.vitrine .chips { margin: 16px 0 4px; }
+.vitrine .chip { font: inherit; cursor: pointer; }
+.v-titulo { font-size: 22px; margin: 14px 0 10px; }
+.v-lojas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 10px; margin-bottom: 30px; }
+.v-loja { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px; border-radius: 18px;
+  background: var(--cartao); border: 1px solid var(--linha); color: var(--texto); text-decoration: none; transition: border-color .15s, transform .15s; }
+.v-loja:hover { border-color: var(--ouro); }
+.v-loja:active { transform: translateY(1px); }
+.v-loja.fechada { opacity: .7; }
+.v-logo { width: 64px; height: 64px; border-radius: 16px; display: grid; place-items: center; font-size: 30px; overflow: hidden; }
+.v-logo img { width: 100%; height: 100%; object-fit: cover; }
+.v-info { display: grid; gap: 2px; min-width: 0; }
+.v-info b { font-size: 17px; }
+.v-info small { color: var(--texto-2); font-size: 13px; }
+.v-info .v-aberta { color: var(--ok); font-weight: 700; }
+.v-info .v-fechada { color: var(--erro); font-weight: 700; }
+.v-seta { font-size: 28px; color: var(--texto-2); }
+@media (prefers-reduced-motion: reduce) { .v-loja { transition: none; } }
+.vitrine .chips { flex-wrap: nowrap; display: flex; }
+.vitrine .chip { flex: none; width: auto; }
+
+/* Faixa de propagandas (passa sozinha a cada 5 s; com o dedo também) */
+.v-anuncios { background: var(--carvao-2); padding: 12px 0 0; }
+.v-an-trilho { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 18px; gap: 0; }
+.v-an-trilho::-webkit-scrollbar { display: none; }
+.v-an { flex: 0 0 100%; scroll-snap-align: start; min-height: 132px; padding: 16px 18px; display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  color: #fff; text-decoration: none; background-size: cover; background-position: center; border-radius: 18px; box-sizing: border-box; overflow: hidden; }
+.v-an strong { font-family: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif; font-size: clamp(20px, 5.5vw, 28px); line-height: 1.1; text-shadow: 0 1px 2px rgba(0,0,0,.35); overflow-wrap: anywhere; }
+.v-an-texto { font-size: 15px; max-width: 46ch; text-shadow: 0 1px 2px rgba(0,0,0,.35); }
+.v-an-selo { align-self: flex-start; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; background: rgba(0,0,0,.35); padding: 3px 8px; border-radius: 999px; }
+.v-an-selo.patro { background: #fff; color: #222; }
+.v-an-acao { align-self: flex-start; margin-top: 6px; font-weight: 800; font-size: 14px; background: rgba(255,255,255,.18); padding: 6px 12px; border-radius: 999px; }
+.v-an:focus-visible { outline: 3px solid var(--laranja); outline-offset: -3px; }
+.v-an-pontos { display: flex; justify-content: center; gap: 6px; padding: 8px 0 2px; }
+.v-an-pontos button { width: 9px; height: 9px; padding: 0; border-radius: 50%; border: 0; background: var(--linha); cursor: pointer; }
+.v-an-pontos button[aria-current="true"] { background: var(--ouro); width: 22px; border-radius: 6px; }

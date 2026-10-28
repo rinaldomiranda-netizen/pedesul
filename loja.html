@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f2a3d">
+<!-- Versão de teste (preços de exemplo): fora dos buscadores. Tirar esta linha quando o cardápio for oficial. -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Cardápio da loja no Pede Sul: entrega, retirada no balcão ou consumo na loja, na Zona Sul de Aracaju.">
+<title>Cardápio | Pede Sul</title>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/marca/icone_32.png">
+<link rel="apple-touch-icon" href="assets/marca/icone_180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/pedesul.css">
+</head>
+<body>
+<div id="faixas"></div>
+
+<header class="topo">
+  <div class="container">
+    <a class="marca" href="#inicio" aria-label="Início do cardápio">
+      <!-- Logo: cada loja troca em Painel → Loja → Logotipo. -->
+      <span class="marca-selo" id="marca-selo" aria-hidden="true"></span>
+      <span class="marca-texto"><strong id="nome-loja">Carregando…</strong><small id="status-loja">Cardápio online</small></span>
+    </a>
+    <button class="btn btn-ouro btn-sacola" type="button" data-acao="abrir-sacola" aria-label="Abrir sacola">
+      🛍️ <span class="sr-maior">Sacola</span> <span class="contador" id="contador-sacola" aria-live="polite">0</span>
+    </button>
+  </div>
+</header>
+
+<div class="container oculto" id="voltar-vitrine"><a class="voltar-vitrine" href="index.html">← Todas as lojas do Pede Sul</a></div>
+<main id="inicio">
+  <section class="heroi" aria-labelledby="titulo-heroi">
+    <div class="container">
+      <div>
+        <div class="destaque-faixa" id="faixa-destaque" aria-live="polite">
+          <span class="icone-grande" aria-hidden="true">🍽️</span>
+          <div><strong>Carregando o cardápio…</strong><p>Um instante.</p></div>
+        </div>
+        <h1 id="titulo-heroi" style="margin-top:18px">O sabor da Zona Sul <em>na sua porta.</em></h1>
+        <p class="sub" style="margin-top:10px">Escolha no cardápio, diga se quer entrega, retirada no balcão ou comer na loja, e acompanhe o seu pedido.</p>
+        <div class="acoes" style="margin-top:16px">
+          <a class="btn btn-ouro" href="#cardapio">Ver cardápio</a>
+          <a class="btn btn-zap" id="btn-zap-topo" href="https://wa.me/5579988476641" target="_blank" rel="noopener">Falar no WhatsApp</a>
+        </div>
+        <p id="link-ultimo" class="oculto" style="margin:14px 0 0"><button class="btn btn-linha btn-peq" type="button" data-acao="ver-ultimo">📦 Acompanhar meu último pedido</button></p>
+      </div>
+      <aside class="resumo-bloco" id="info-loja" aria-label="Informações da loja" style="margin:0">
+        <h3>Como pedir</h3>
+        <p style="margin:0 0 6px">1. Escolha os itens e toque em <b>Adicionar</b>.<br>2. Abra a sacola e confira.<br>3. Informe seus dados e envie.</p>
+        <p style="margin:0;color:var(--texto-2)" id="info-modalidades"></p>
+      </aside>
+    </div>
+  </section>
+
+  <div class="container area-busca">
+    <label class="busca"><span class="sr">Buscar no cardápio</span><input type="search" id="busca" placeholder="Buscar no cardápio…" autocomplete="off"></label>
+  </div>
+  <div class="barra-cardapio" id="cardapio">
+    <div class="container">
+      <nav class="chips" id="chips" aria-label="Categorias do cardápio"></nav>
+    </div>
+  </div>
+
+  <div class="container" id="conteudo" aria-live="polite">
+    <div class="grade" style="margin-top:20px"><div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div></div>
+  </div>
+</main>
+
+<footer class="rodape">
+  <p><strong id="rodape-nome"></strong></p>
+  <p id="rodape-horario"></p>
+  <p>Fotos e ícones são ilustrativos. Itens marcados como <b>“Exemplo”</b> têm preço a confirmar com o restaurante.</p>
+  <p>Seus dados (nome, telefone e endereço) são usados só para preparar e entregar o pedido.</p>
+  <p>Loja no <b>Pede Sul</b> · desenvolvido por RMD Delivery</p>
+</footer>
+
+<div class="barra-sacola oculto" id="barra-sacola">
+  <button class="btn btn-ouro" type="button" data-acao="abrir-sacola"><span>🛍️ Ver sacola (<span id="barra-qtd">0</span>)</span><span id="barra-total">R$ 0,00</span></button>
+</div>
+
+<div id="janela-raiz"></div>
+
+<script src="js/config.js"></script>
+<script src="js/nucleo.js"></script>
+<script src="js/dados-demo.js"></script>
+<script src="js/plataforma.js"></script>
+<script src="js/backend.js"></script>
+<script src="js/qrcode.min.js"></script>
+<script src="js/pix.js"></script>
+<script src="js/publico.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

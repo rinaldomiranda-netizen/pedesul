@@ -44,3 +44,5 @@
 .vendas .caixa { background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--raio); padding: 16px; }
 .vendas .v-plano-promo { border: 2px solid var(--ouro); }
 .vendas .v-planos { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+/* vídeo de apresentação para donos de loja */
+.v-video video { display: block; width: 100%; max-width: 860px; aspect-ratio: 16 / 9; border-radius: 18px; background: #08141d; box-shadow: var(--sombra); }

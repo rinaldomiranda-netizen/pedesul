@@ -29,12 +29,14 @@
 .v-info .v-fechada { color: var(--erro); font-weight: 700; }
 .v-seta { font-size: 28px; color: var(--texto-2); }
 @media (prefers-reduced-motion: reduce) { .v-loja { transition: none; } }
-.vitrine .chips { flex-wrap: nowrap; display: flex; }
+.vitrine .chips { flex-wrap: nowrap; display: flex; overflow-x: auto; max-width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+.vitrine .chips::-webkit-scrollbar { display: none; }
 .vitrine .chip { flex: none; width: auto; }
 
 /* Faixa de propagandas (passa sozinha a cada 5 s; com o dedo também) */
-.v-anuncios { background: var(--carvao-2); padding: 12px 0 0; }
-.v-an-trilho { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 18px; gap: 0; }
+.v-anuncios { background: var(--carvao-2); padding: 12px 0 0; overflow: hidden; }
+.v-anuncios > .container { min-width: 0; max-width: 100%; }
+.v-an-trilho { display: flex; width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 18px; gap: 0; }
 .v-an-trilho::-webkit-scrollbar { display: none; }
 .v-an { flex: 0 0 100%; scroll-snap-align: start; min-height: 132px; padding: 16px 18px; display: flex; flex-direction: column; justify-content: center; gap: 4px;
   color: #fff; text-decoration: none; background-size: cover; background-position: center; border-radius: 18px; box-sizing: border-box; overflow: hidden; }
@@ -47,3 +49,10 @@
 .v-an-pontos { display: flex; justify-content: center; gap: 6px; padding: 8px 0 2px; }
 .v-an-pontos button { width: 9px; height: 9px; padding: 0; border-radius: 50%; border: 0; background: var(--linha); cursor: pointer; }
 .v-an-pontos button[aria-current="true"] { background: var(--ouro); width: 22px; border-radius: 6px; }
+
+/* vídeo da vitrine (abre numa janela por cima) */
+.v-ver-video { margin: 0 0 14px; }
+.v-video-janela { position: fixed; inset: 0; margin: auto; border: 0; padding: 0; background: transparent; width: min(92vw, 420px, calc(86vh * 9 / 16)); max-width: none; height: fit-content; max-height: 96vh; overflow: hidden; }
+.v-video-janela::backdrop { background: rgba(5, 12, 18, .82); }
+.v-video-janela video { display: block; width: 100%; aspect-ratio: 9 / 16; border-radius: 18px; background: #08141d; }
+.v-video-fechar { position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--ouro); color: #1a0d07; font-size: 26px; font-weight: 800; cursor: pointer; z-index: 2; }

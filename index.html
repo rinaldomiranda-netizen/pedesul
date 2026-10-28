@@ -48,6 +48,7 @@
     <div class="container">
       <h1>O sabor da Zona Sul <em>na sua porta.</em></h1>
       <p>Atalaia, Coroa do Meio, Farolândia, Aruana, Jardins, Grageru, Inácio Barbosa e mais. Escolha a loja, peça e acompanhe.</p>
+      <button type="button" class="btn btn-linha btn-peq v-ver-video" id="v-ver-video">▶ Ver o vídeo</button>
       <label class="busca"><span class="sr">Buscar loja ou prato</span><input type="search" id="v-busca" placeholder="Buscar loja ou tipo de comida…" autocomplete="off"></label>
     </div>
   </section>
@@ -57,6 +58,13 @@
     <div class="v-lojas" id="v-lojas" aria-live="polite"><div class="esqueleto"></div><div class="esqueleto"></div></div>
   </div>
 </main>
+
+<dialog class="v-video-janela" id="v-video-janela" aria-label="Vídeo do Pede Sul">
+  <button type="button" class="v-video-fechar" id="v-video-fechar" aria-label="Fechar o vídeo">×</button>
+  <video controls playsinline preload="none" poster="videos/pedesul_video2_capa.jpg">
+    <source src="videos/pedesul_video2_clientes.mp4" type="video/mp4">
+  </video>
+</dialog>
 
 <footer class="rodape">
   <p><strong>Pede Sul</strong> · O sabor da Zona Sul na sua porta.</p>

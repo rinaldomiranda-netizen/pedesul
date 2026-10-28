@@ -140,6 +140,17 @@
   var t = null;
   $('#v-busca').addEventListener('input', function (ev) { clearTimeout(t); t = setTimeout(function () { st.busca = ev.target.value; render(); }, 150); });
 
+  // vídeo da vitrine: abre por cima e para de tocar ao fechar
+  var janela = $('#v-video-janela');
+  if (janela && janela.showModal) {
+    var video = janela.querySelector('video');
+    $('#v-ver-video').addEventListener('click', function () { janela.showModal(); try { video.play(); } catch (e) { /* o navegador pode pedir toque */ } });
+    function fechar() { video.pause(); janela.close(); }
+    $('#v-video-fechar').addEventListener('click', fechar);
+    janela.addEventListener('click', function (ev) { if (ev.target === janela) fechar(); });
+    janela.addEventListener('close', function () { video.pause(); });
+  } else if ($('#v-ver-video')) $('#v-ver-video').hidden = true;
+
   window.PedeSulVitrine = { st: st }; // para conferência nos testes
   carregar();
 })();

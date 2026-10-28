@@ -105,3 +105,32 @@
   .v-an, .v-an::after, .v-an-arte, .v-an-bolha, .v-an.ativa .v-an-conteudo > *, .v-an.ativa .v-an-arte, .v-an-pontos button.enchendo::after,
   .v-marca .lg-pino, .v-marca .lg-sol, .v-marca .lg-onda1, .v-marca .lg-onda2 { animation: none !important; }
 }
+
+/* ---- tema da época (liga sozinho perto de cada festa; ver js/temas.js) ---- */
+.v-heroi { position: relative; overflow: hidden; }
+.v-heroi > .container { position: relative; z-index: 1; }
+.com-tema .v-heroi { background-color: var(--tema2);
+  background-image: radial-gradient(120% 70px at 50% 100%, var(--madeira) 0 55%, transparent 56%), linear-gradient(160deg, var(--tema1) 0%, var(--tema2) 100%); }
+.com-tema .v-heroi h1 em { color: var(--tema3); }
+.com-tema .v-heroi p { color: rgba(255,255,255,.85); }
+.v-tema-chip { display: inline-block; margin: 0 0 6px !important; padding: 5px 12px; border-radius: 999px; background: rgba(0,0,0,.28); color: #fff !important;
+  font-weight: 800; font-size: 14px; animation: temaChip 2.4s ease-in-out infinite; }
+@keyframes temaChip { 0%, 100% { transform: none; } 50% { transform: translateY(-2px); } }
+.v-enfeites { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.v-enfeites .particula { position: absolute; top: -40px; line-height: 1; color: #fff; opacity: .6; }
+.tema-saojoao .v-heroi { padding-top: 70px; }
+.v-enfeites .cair { animation: temaCai linear infinite; }
+.v-enfeites .confete { width: 9px; height: 14px; border-radius: 2px; }
+@keyframes temaCai { from { transform: translateY(-20px) rotate(0deg); } to { transform: translateY(560px) rotate(540deg); } }
+.v-enfeites .subir { top: auto; bottom: -40px; animation: temaSobe ease-in infinite; }
+@keyframes temaSobe { from { transform: translateY(0) translateX(0); opacity: 0; } 15% { opacity: .9; } to { transform: translateY(-560px) translateX(20px); opacity: 0; } }
+.v-enfeites .piscar { animation: temaPisca ease-in-out infinite; }
+@keyframes temaPisca { 0%, 100% { opacity: 0; transform: scale(.4); } 50% { opacity: 1; transform: scale(1.1); } }
+.v-enfeites .varal { position: absolute; left: -2%; right: -2%; top: 0; display: flex; justify-content: space-between; filter: drop-shadow(0 3px 3px rgba(0,0,0,.3)); }
+.v-enfeites .varal.dois { top: 36px; transform: translateX(14px); opacity: .85; }
+.v-enfeites .bandeira { width: 26px; height: 30px; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%); transform-origin: top center; animation: temaBalanca 2.2s ease-in-out infinite; }
+@keyframes temaBalanca { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+.v-enfeites .fogo { position: absolute; width: 6px; height: 6px; border-radius: 50%; color: #ffd23f; animation: temaFogo 4.2s ease-out infinite; opacity: 0;
+  box-shadow: 0 -34px 0 0 currentColor, 24px -24px 0 0 currentColor, 34px 0 0 0 currentColor, 24px 24px 0 0 currentColor, 0 34px 0 0 currentColor, -24px 24px 0 0 currentColor, -34px 0 0 0 currentColor, -24px -24px 0 0 currentColor; }
+@keyframes temaFogo { 0% { transform: scale(.1); opacity: 1; } 45% { transform: scale(1); opacity: 1; } 70%, 100% { transform: scale(1.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .v-tema-chip { animation: none; } }

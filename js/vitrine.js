@@ -11,6 +11,10 @@
   var COM_BANCO = api.modo === 'supabase';
   function $(s) { return document.querySelector(s); }
   var st = { lojas: [], filtro: '', busca: '', anuncios: [], atual: 0, timer: null, parado: false };
+  // Tema da época: liga sozinho perto de cada festa (js/temas.js). ?tema=natal mostra antes da hora; ?tema=nenhum desliga.
+  var T = window.PedeSulTemas;
+  var pedido = (/[?&]tema=([a-z]+)/.exec(location.search) || [])[1];
+  var TEMA = !T ? null : (pedido ? (pedido === 'nenhum' ? null : T.porId(pedido)) : T.temaDoDia(new Date()));
 
   function normalizar(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
 
@@ -28,6 +32,8 @@
       }));
       st.anuncios = P.anunciosNoAr();
     }
+    if (TEMA) st.anuncios = [{ id: 'tema-' + TEMA.id, tipo: 'destaque', titulo: TEMA.saudacao[0], texto: TEMA.saudacao[1],
+      cor: TEMA.cores[0], cor2: TEMA.cores[1], emoji: TEMA.emoji, epoca: TEMA.nome }].concat(st.anuncios || []);
     renderAnuncios();
     render();
   }
@@ -55,12 +61,13 @@
       var img = a.imagem_url && /^(https:\/\/|assets\/|data:image\/(png|jpeg|webp);base64,)/.test(a.imagem_url) ? a.imagem_url : null;
       var l = linkDe(a);
       var dentro = '<i class="v-an-bolha b1" aria-hidden="true"></i><i class="v-an-bolha b2" aria-hidden="true"></i>' +
-        (img ? '' : '<span class="v-an-arte" aria-hidden="true">' + (ARTE[a.tipo] || '✨') + '</span>') +
-        '<span class="v-an-conteudo"><span class="v-an-selo' + (a.tipo === 'patrocinador' ? ' patro' : '') + '">' + esc(SELO[a.tipo] || '') + (a.tipo === 'patrocinador' && a.anunciante ? ' · ' + esc(a.anunciante) : '') + '</span>' +
+        (img ? '' : '<span class="v-an-arte" aria-hidden="true">' + (a.emoji || ARTE[a.tipo] || '✨') + '</span>') +
+        '<span class="v-an-conteudo"><span class="v-an-selo' + (a.tipo === 'patrocinador' ? ' patro' : '') + '">' + esc(a.epoca || SELO[a.tipo] || '') + (a.tipo === 'patrocinador' && a.anunciante ? ' · ' + esc(a.anunciante) : '') + '</span>' +
         '<strong>' + esc(a.titulo) + '</strong>' + (a.texto ? '<span class="v-an-texto">' + esc(a.texto) + '</span>' : '') +
         (l ? '<span class="v-an-acao">' + (l.fora ? 'Saiba mais ›' : 'Ver a loja ›') + '</span>' : '') + '</span>';
       var estilo = 'background-color:' + esc(cor) + (img ? ';background-image:linear-gradient(90deg,rgba(0,0,0,.62),rgba(0,0,0,.08)),url(&quot;' + esc(img) + '&quot;)'
-        : ';background-image:linear-gradient(120deg,' + esc(cor) + ' 0%,' + escurecer(cor, 0.62) + ' 45%,' + esc(cor) + ' 70%,' + escurecer(cor, 0.8) + ' 100%)');
+        : (a.cor2 ? ';background-image:linear-gradient(120deg,' + esc(cor) + ' 0%,' + esc(a.cor2) + ' 50%,' + esc(cor) + ' 100%)'
+          : ';background-image:linear-gradient(120deg,' + esc(cor) + ' 0%,' + escurecer(cor, 0.62) + ' 45%,' + esc(cor) + ' 70%,' + escurecer(cor, 0.8) + ' 100%)'));
       var attrs = ' class="v-an' + (img ? ' com-imagem' : '') + (i === st.atual ? ' ativa' : '') + '" role="group" aria-roledescription="propaganda" aria-label="' + (i + 1) + ' de ' + lista.length + '" data-i="' + i + '" style="' + estilo + '"';
       return l ? '<a' + attrs + ' href="' + esc(l.href) + '"' + (l.fora ? ' target="_blank" rel="noopener sponsored"' : '') + '>' + dentro + '</a>' : '<div' + attrs + '>' + dentro + '</div>';
     }).join('');
@@ -167,6 +174,49 @@
     janela.addEventListener('close', function () { video.pause(); });
   } else if ($('#v-ver-video')) $('#v-ver-video').hidden = true;
 
-  window.PedeSulVitrine = { st: st }; // para conferência nos testes
+  // ---------------------------------------------------------------- tema da época (cores + enfeites com movimento)
+  var ENFEITES = {
+    confete: { tipo: 'cair', itens: ['', '', '', ''], formas: true, qtd: 22 },
+    neve: { tipo: 'cair', itens: ['❄', '•', '❅', '•'], qtd: 20, devagar: true },
+    coracoes: { tipo: 'subir', itens: ['❤', '💗', '🌸'], qtd: 12 },
+    estrelas: { tipo: 'piscar', itens: ['✨', '⭐', '✦'], qtd: 14 },
+    baloes: { tipo: 'subir', itens: ['🎈', '🎈', '🎉'], qtd: 10 },
+    ovos: { tipo: 'cair', itens: ['🍫', '🥚', '🐰'], qtd: 10, devagar: true },
+    faiscas: { tipo: 'piscar', itens: ['🏷️', '✨', '%'], qtd: 12 },
+    fogos: { tipo: 'fogos', qtd: 6 },
+    bandeirinhas: { tipo: 'bandeirinhas' }
+  };
+  function aplicarTema() {
+    if (!TEMA) return;
+    var raizEl = document.documentElement, c = TEMA.cores;
+    document.body.classList.add('com-tema', 'tema-' + TEMA.id);
+    raizEl.style.setProperty('--tema1', c[0]); raizEl.style.setProperty('--tema2', c[1]); raizEl.style.setProperty('--tema3', c[2]);
+    var chip = $('#v-tema-chip');
+    if (chip) { chip.textContent = TEMA.emoji + ' Clima de ' + TEMA.nome + ' na Zona Sul'; chip.hidden = false; }
+    var caixa = $('#v-enfeites'), e = ENFEITES[TEMA.enfeite];
+    if (!caixa || !e || semMovimento) return;
+    var cores = [c[2], '#ffffff', c[1], '#f2552c', '#0e7c86'], h = '';
+    if (e.tipo === 'bandeirinhas') {
+      for (var b = 0; b < 16; b++) h += '<i class="bandeira" style="background:' + cores[b % cores.length] + ';animation-delay:' + (b * 0.12).toFixed(2) + 's"></i>';
+      caixa.innerHTML = '<div class="varal">' + h + '</div><div class="varal dois">' + h + '</div>';
+      return;
+    }
+    // posições e tempos fixos (não sorteados), para a página ficar igual em todo aparelho
+    for (var i = 0; i < e.qtd; i++) {
+      var x = (i * 37 + 11) % 100, atraso = ((i * 7) % 10) * 0.6, dur = (e.devagar ? 9 : 6) + (i % 5);
+      if (e.tipo === 'fogos') {
+        h += '<i class="fogo" style="left:' + (8 + (i * 29) % 84) + '%;top:' + (8 + (i * 17) % 50) + '%;animation-delay:' + (i * 0.7).toFixed(1) + 's;color:' + cores[i % cores.length] + '"></i>';
+      } else if (e.formas) {
+        h += '<i class="particula cair confete" style="left:' + x + '%;background:' + cores[i % cores.length] + ';animation-delay:-' + atraso + 's;animation-duration:' + dur + 's"></i>';
+      } else {
+        h += '<i class="particula ' + e.tipo + '" style="left:' + x + '%;' + (e.tipo === 'piscar' ? 'top:' + ((i * 23) % 80) + '%;' : '') +
+          'animation-delay:-' + atraso + 's;animation-duration:' + dur + 's;font-size:' + (14 + (i % 4) * 6) + 'px">' + e.itens[i % e.itens.length] + '</i>';
+      }
+    }
+    caixa.innerHTML = h;
+  }
+  aplicarTema();
+
+  window.PedeSulVitrine = { st: st, tema: TEMA }; // para conferência nos testes
   carregar();
 })();

@@ -122,11 +122,12 @@
       '<div class="cartao-num"><span>Sistema individual</span><strong>' + (lojas.length - naVitrine) + '</strong></div>' +
       '<div class="cartao-num"><span>Suspensas</span><strong style="color:' + (lojas.some(function (l) { return !l.liberada; }) ? 'var(--erro)' : 'var(--ok)') + '">' + lojas.filter(function (l) { return !l.liberada; }).length + '</strong></div></div>';
     h += '<div class="barra-acoes"><a class="btn btn-linha btn-peq" href="index.html" target="_blank" rel="noopener">🏖️ Abrir a vitrine</a><a class="btn btn-linha btn-peq" href="vendas.html" target="_blank" rel="noopener">💼 Página de vendas</a></div>';
-    h += '<nav class="chips" aria-label="Partes da área do desenvolvedor">' + [['lojas', '🏪 Lojas'], ['anuncios', '📣 Propagandas'], ['planos', '💲 Planos e preços']].map(function (a) {
+    h += '<nav class="chips" aria-label="Partes da área do desenvolvedor">' + [['lojas', '🏪 Lojas'], ['anuncios', '📣 Propagandas'], ['epocas', '🎉 Épocas'], ['planos', '💲 Planos e preços']].map(function (a) {
       return '<button type="button" class="chip' + (st.aba === a[0] ? ' agora' : '') + '" data-acao="aba" data-aba="' + a[0] + '" aria-pressed="' + (st.aba === a[0]) + '">' + a[1] + '</button>';
     }).join('') + '</nav>';
     if (st.aba === 'lojas') h += telaLojas(lojas);
     else if (st.aba === 'anuncios') h += telaAnuncios();
+    else if (st.aba === 'epocas') h += telaEpocas();
     else h += htmlPlanos() + '<div class="caixa"><h3 style="margin-top:0">Promoção de lançamento</h3><p style="font-size:14px;margin:0">Os ' + PROMO.vagas + ' primeiros levam o plano Completo pelo preço do Essencial (' + N.reais(PROMO.preco) + '/mês), e nos ' + PROMO.mesesMetade +
       ' primeiros meses ' + N.reais(PROMO.precoInicio) + '/mês. As inscrições da página de vendas vão para a lista da RMD no servidor e aparecem na área do desenvolvedor do Aterrisse.</p></div>';
     $('#conteudo').innerHTML = h;
@@ -200,6 +201,24 @@
         return '<label class="chk"><input type="checkbox" name="rec" value="' + r[0] + '"' + (rec[r[0]] !== false ? ' checked' : '') + '> ' + esc(r[1]) + '</label>';
       }).join('') + '</div><p style="font-size:12px;color:var(--texto-2)">Recurso desligado some do painel e do cardápio da loja, e o sistema recusa se alguém tentar usar.</p>' +
       '<div class="barra-acoes"><button class="btn btn-ouro" type="submit">Salvar</button><button class="btn btn-linha" type="button" data-acao="cancelar">Cancelar</button></div></form>';
+  }
+
+  // ---------------------------------------------------------------- épocas (tema da vitrine que liga sozinho perto de cada festa)
+  function dataCurta(d) { return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear(); }
+  function telaEpocas() {
+    var T = window.PedeSulTemas;
+    if (!T) return '<div class="vazio">Calendário das épocas indisponível.</div>';
+    var agora = T.temaDoDia(new Date()), base = location.href.replace(/rmd\.html.*$/, '');
+    var h = '<h2>Épocas do ano</h2><p style="font-size:14px;color:var(--texto-2)">Perto de cada festa a vitrine muda sozinha: cores, enfeites com movimento e uma propaganda de saudação no começo da faixa. ' +
+      'Não precisa ligar nada. Carnaval e Páscoa mudam de data todo ano e são calculados sozinhos.</p>';
+    h += '<div class="caixa"><b>Agora:</b> ' + (agora ? esc(agora.emoji + ' ' + agora.nome) + ' (até ' + dataCurta(agora.fim) + ')' : 'sem tema (vitrine com as cores normais do Pede Sul)') + '</div>';
+    h += T.proximos(new Date(), 12).map(function (t) {
+      return '<div class="caixa dev-loja"><div class="dev-loja-cab"><span class="dev-logo" style="background:linear-gradient(135deg,' + esc(t.cores[0]) + ',' + esc(t.cores[1]) + ')">' + esc(t.emoji) + '</span>' +
+        '<div style="flex:1;min-width:0"><h3 style="margin:0">' + esc(t.nome) + '</h3><small style="color:var(--texto-2)">' + dataCurta(t.inicio) + ' a ' + dataCurta(t.fim) + '</small><br>' +
+        '<span class="status ' + (t.ativo ? 'st-PRONTO' : 'st-RECEBIDO') + '">' + (t.ativo ? 'No ar agora' : 'Liga sozinho em ' + dataCurta(t.inicio)) + '</span></div>' +
+        '<a class="btn btn-linha btn-peq" href="' + esc(base + 'index.html?tema=' + t.id) + '" target="_blank" rel="noopener">Ver como fica</a></div></div>';
+    }).join('');
+    return h;
   }
 
   // ---------------------------------------------------------------- propagandas (faixa que passa no topo da vitrine)

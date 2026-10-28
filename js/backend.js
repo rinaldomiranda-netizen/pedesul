@@ -133,6 +133,7 @@
   BackendSupabase.prototype.acompanhar = function (numero, codigo) { return this._daLoja('pedesul_acompanhar', { p_numero: Number(numero), p_codigo: String(codigo) }); };
   BackendSupabase.prototype.lojasDaVitrine = function () { return this._rpc('pedesul_vitrine'); };
   BackendSupabase.prototype.anuncios = function () { return this._rpc('pedesul_anuncios'); };
+  BackendSupabase.prototype.produtosDaVitrine = function () { return this._rpc('pedesul_vitrine_produtos'); };
   BackendSupabase.prototype.recomecarVitrine = function () { return Promise.resolve(); };
 
   // ---- conta (usuário + senha; quem cria os acessos é o dono da loja ou a RMD)

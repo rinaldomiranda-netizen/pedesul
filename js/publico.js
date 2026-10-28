@@ -12,6 +12,8 @@
   // ?simular_hora=19:30 mostra o cardápio como se fosse esse horário em Maceió (para conferir os destaques).
   var horaSimulada = /^\d{2}:\d{2}$/.test(params.get('simular_hora') || '') ? params.get('simular_hora') : null;
   var mesaDoQr = (params.get('mesa') || '').slice(0, 20).trim();
+  // ?produto=… (veio da vitrine): abre esse produto assim que o cardápio carregar
+  var produtoDoLink = (params.get('produto') || '').slice(0, 60);
 
   var estado = {
     cardapio: null, erroCarga: null, destaque: null, busca: '',
@@ -67,6 +69,11 @@
     }
     estado.destaque = estado.cardapio ? N.destaqueAtual(estado.cardapio.destaques, agora()) : null;
     renderTudo();
+    if (produtoDoLink && estado.cardapio) {
+      var idLink = produtoDoLink; produtoDoLink = '';
+      if (N.acharProduto(estado.cardapio, idLink)) abrirProduto(idLink);
+      else toast('Esse produto não está mais no cardápio. Veja as outras opções da loja.');
+    }
   }
 
   function limparSacolaInvalida() {

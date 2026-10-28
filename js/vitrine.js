@@ -1,4 +1,6 @@
 /* Pede Sul — vitrine: todas as lojas liberadas que escolheram aparecer na plataforma.
+   Primeiro os produtos de todas as lojas misturados (quem tem plano mais caro aparece mais: js/vitrine-produtos.js);
+   tocar no produto abre ele direto na loja para pedir. Embaixo, a lista das lojas para entrar direto numa delas.
    Lojas "individuais" (com endereço e marca próprios) e do plano Salão (só dentro da loja) não aparecem aqui.
    No topo, a faixa de propagandas que passa sozinha: lojas, promoções, destaques e patrocinadores (a RMD cadastra).
    Com o banco: lojas e propagandas vêm do servidor. Modo demonstração: deste navegador. */
@@ -6,11 +8,12 @@
   'use strict';
   var N = window.AterrisseNucleo, P = window.PedeSulPlataforma, B = window.AterrisseBackend;
   var cfg = window.ATERRISSE_CONFIG || {};
-  var esc = N.escaparHtml;
+  var esc = N.escaparHtml, VP = window.PedeSulVitrineProdutos;
   var api = B.criar(Object.assign({}, cfg, { LOJA: 'vitrine' }));
   var COM_BANCO = api.modo === 'supabase';
   function $(s) { return document.querySelector(s); }
-  var st = { lojas: [], filtro: '', busca: '', anuncios: [], atual: 0, timer: null, parado: false };
+  var st = { lojas: [], filtro: '', busca: '', anuncios: [], atual: 0, timer: null, parado: false,
+    produtos: [], ordenados: [], periodo: null, mostrar: 12 };
   // Tema da época: liga sozinho perto de cada festa (js/temas.js). ?tema=natal mostra antes da hora; ?tema=nenhum desliga.
   var T = window.PedeSulTemas;
   var pedido = (/[?&]tema=([a-z]+)/.exec(location.search) || [])[1];
@@ -24,19 +27,40 @@
         st.lojas = (await api.lojasDaVitrine()).map(function (l) { return { pl: l, loja: l, produtos: l.produtos || '' }; });
       } catch (e) { st.erro = e.message; st.lojas = []; }
       try { st.anuncios = await api.anuncios(); } catch (e) { st.anuncios = []; }
+      try { st.produtos = await api.produtosDaVitrine(); } catch (e) { st.produtos = []; }
     } else {
+      st.produtos = [];
       st.lojas = await Promise.all(P.daVitrine().map(async function (pl) {
         var c = null;
         try { c = await new B.BackendDemo(undefined, undefined, { loja: pl.slug, vitrine: !!cfg.VITRINE }).cardapio(); } catch (e) { /* loja sem dados: mostra só o nome */ }
+        if (c && pl.plano !== 'salao') {
+          var ativas = (c.categorias || []).map(function (k) { return k.id; });
+          c.produtos.forEach(function (p) {
+            if (p.ativo === false || p.disponivel === false || ativas.indexOf(p.categoria_id) < 0) return;
+            st.produtos.push({ id: p.id, nome: p.nome, descricao: p.descricao, preco: p.preco, icone: p.icone, imagem_url: p.imagem_url,
+              destaque: !!p.destaque, demonstracao: !!p.demonstracao, loja: pl.slug, loja_nome: (c.loja && c.loja.nome) || pl.nome,
+              loja_cor: (c.loja && c.loja.cor) || pl.cor, loja_icone: pl.icone, segmento: pl.segmento, plano: pl.plano,
+              aberto: !(c.loja && c.loja.aberto === false) });
+          });
+        }
         return { pl: pl, loja: c && c.loja, produtos: c ? c.produtos.map(function (p) { return p.nome; }).join(' ') : '' };
       }));
       st.anuncios = P.anunciosNoAr();
     }
     if (TEMA) st.anuncios = [{ id: 'tema-' + TEMA.id, tipo: 'destaque', titulo: TEMA.saudacao[0], texto: TEMA.saudacao[1],
       cor: TEMA.cores[0], cor2: TEMA.cores[1], emoji: TEMA.emoji, epoca: TEMA.nome }].concat(st.anuncios || []);
+    reordenar();
     renderAnuncios();
     render();
   }
+  // a ordem dos produtos muda sozinha a cada 15 minutos (igual em todo aparelho no mesmo período)
+  function reordenar() {
+    st.periodo = VP.periodo(new Date());
+    st.ordenados = VP.ordenar(st.produtos || [], new Date());
+  }
+  setInterval(function () {
+    if (!document.hidden && st.produtos.length && VP.periodo(new Date()) !== st.periodo) { reordenar(); render(); }
+  }, 60000);
 
   // ---------------------------------------------------------------- faixa de propagandas
 
@@ -116,6 +140,59 @@
   ['pointerenter', 'focusin', 'touchstart'].forEach(function (ev) { trilho.addEventListener(ev, function () { st.parado = true; }, { passive: true }); });
   ['pointerleave', 'focusout', 'touchend'].forEach(function (ev) { trilho.addEventListener(ev, function () { setTimeout(function () { st.parado = false; }, 4000); }, { passive: true }); });
 
+  // ---------------------------------------------------------------- produtos de todas as lojas
+
+  var IMG_OK = /^(https:\/\/|assets\/|data:image\/(png|jpeg|webp);base64,)/;
+  function corOk(c) { return /^#[0-9a-fA-F]{6}$/.test(c || '') ? c : '#f2552c'; }
+  function linkProduto(p) { return 'loja.html?loja=' + encodeURIComponent(p.loja) + '&produto=' + encodeURIComponent(p.id); }
+  function fotoProduto(p) {
+    var img = p.imagem_url && IMG_OK.test(p.imagem_url) ? '<img src="' + esc(p.imagem_url) + '" alt="" loading="lazy">' : '<span aria-hidden="true">' + esc(p.icone || p.loja_icone || '🍽️') + '</span>';
+    return '<span class="v-prod-foto" style="background:' + esc(corOk(p.loja_cor)) + '">' + img +
+      (p.demonstracao ? '<em class="v-prod-exemplo">Exemplo</em>' : '') + (p.aberto === false ? '<em class="v-prod-fechada">Loja fechada</em>' : '') + '</span>';
+  }
+  function cartaoProduto(p, grande) {
+    return '<article class="v-prod' + (grande ? ' grande' : '') + (p.aberto === false ? ' fechada' : '') + '">' +
+      '<a class="v-prod-link" href="' + esc(linkProduto(p)) + '" aria-label="' + esc(p.nome + ', ' + N.reais(p.preco) + ', da loja ' + p.loja_nome) + '">' + fotoProduto(p) +
+      '<span class="v-prod-nome">' + esc(p.nome) + '</span>' +
+      (grande && p.descricao ? '<span class="v-prod-desc">' + esc(p.descricao) + '</span>' : '') +
+      '<span class="v-prod-preco">' + N.reais(p.preco) + (grande ? '<b class="v-prod-pedir">Pedir ›</b>' : '') + '</span></a>' +
+      '<a class="v-prod-loja" href="loja.html?loja=' + encodeURIComponent(p.loja) + '"><span aria-hidden="true">' + esc(p.loja_icone || '🍽️') + '</span> ' + esc(p.loja_nome) + ' <span aria-hidden="true">›</span></a>' +
+      '</article>';
+  }
+  function renderProdutos(termo) {
+    var secD = $('#v-sec-destaque'), secP = $('#v-sec-produtos');
+    var lista = st.ordenados.filter(function (p) {
+      if (st.filtro && p.segmento !== st.filtro) return false;
+      return !termo || normalizar(p.nome + ' ' + (p.descricao || '') + ' ' + p.loja_nome + ' ' + (p.segmento || '')).indexOf(termo) >= 0;
+    });
+    // faixa "Em destaque agora": só quando a pessoa não está buscando
+    var dest = termo ? [] : VP.destaques(lista, 10);
+    secD.hidden = !dest.length;
+    $('#v-prod-faixa').innerHTML = dest.map(function (p) { return cartaoProduto(p, true); }).join('');
+    secP.hidden = !st.ordenados.length;
+    if (!lista.length) { $('#v-produtos').innerHTML = '<div class="vazio">Nenhum prato encontrado.</div>'; $('#v-mais').hidden = true; return; }
+    $('#v-produtos').innerHTML = lista.slice(0, st.mostrar).map(function (p) { return cartaoProduto(p, false); }).join('');
+    $('#v-mais').hidden = lista.length <= st.mostrar;
+    iniciarFaixaProdutos();
+  }
+  // a faixa de destaques passa sozinha (para quando a pessoa toca; quem pediu menos movimento passa com o dedo)
+  var tFaixa = null, faixaParada = false;
+  function iniciarFaixaProdutos() {
+    clearInterval(tFaixa);
+    var f = $('#v-prod-faixa');
+    if (semMovimento || !f || f.children.length < 2) return;
+    tFaixa = setInterval(function () {
+      if (faixaParada || document.hidden || f.offsetParent === null) return;
+      var passo = f.children[0].getBoundingClientRect().width + 12;
+      var fim = f.scrollLeft + f.clientWidth >= f.scrollWidth - 4;
+      f.scrollTo({ left: fim ? 0 : f.scrollLeft + passo, behavior: 'smooth' });
+    }, 3500);
+  }
+  var faixaP = $('#v-prod-faixa');
+  ['pointerenter', 'focusin', 'touchstart'].forEach(function (ev) { faixaP.addEventListener(ev, function () { faixaParada = true; }, { passive: true }); });
+  ['pointerleave', 'focusout', 'touchend'].forEach(function (ev) { faixaP.addEventListener(ev, function () { setTimeout(function () { faixaParada = false; }, 4000); }, { passive: true }); });
+  $('#v-mais').addEventListener('click', function () { st.mostrar += 12; render(); });
+
   // ---------------------------------------------------------------- lojas
 
   function render() {
@@ -130,6 +207,7 @@
       return '<button type="button" class="chip' + (on ? ' agora' : '') + '" data-seg="' + esc(s === 'Tudo' ? '' : s) + '" aria-pressed="' + on + '">' + esc(s) + '</button>';
     }).join('');
     var termo = normalizar(st.busca.trim());
+    renderProdutos(termo);
     var lista = st.lojas.filter(function (x) {
       if (st.filtro && x.pl.segmento !== st.filtro) return false;
       return !termo || normalizar(x.pl.nome + ' ' + x.pl.segmento + ' ' + x.produtos).indexOf(termo) >= 0;
@@ -158,10 +236,10 @@
     if (ir) { st.parado = true; irPara(Number(ir.dataset.ir)); setTimeout(function () { st.parado = false; }, 6000); return; }
     var b = ev.target.closest('[data-seg]');
     if (!b) return;
-    st.filtro = b.dataset.seg; render();
+    st.filtro = b.dataset.seg; st.mostrar = 12; render();
   });
   var t = null;
-  $('#v-busca').addEventListener('input', function (ev) { clearTimeout(t); t = setTimeout(function () { st.busca = ev.target.value; render(); }, 150); });
+  $('#v-busca').addEventListener('input', function (ev) { clearTimeout(t); t = setTimeout(function () { st.busca = ev.target.value; st.mostrar = 12; render(); }, 150); });
 
   // vídeo da vitrine: abre por cima e para de tocar ao fechar
   var janela = $('#v-video-janela');

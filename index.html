@@ -49,14 +49,25 @@
     <div class="container">
       <p class="v-tema-chip" id="v-tema-chip" hidden></p>
       <h1>O sabor da Zona Sul <em>na sua porta.</em></h1>
-      <p>Atalaia, Coroa do Meio, Farolândia, Aruana, Jardins, Grageru, Inácio Barbosa e mais. Escolha a loja, peça e acompanhe.</p>
+      <p>Atalaia, Coroa do Meio, Farolândia, Aruana, Jardins, Grageru, Inácio Barbosa e mais. Veja os pratos de todas as lojas ou entre direto na sua preferida.</p>
       <button type="button" class="btn btn-linha btn-peq v-ver-video" id="v-ver-video">▶ Ver o vídeo</button>
-      <label class="busca"><span class="sr">Buscar loja ou prato</span><input type="search" id="v-busca" placeholder="Buscar loja ou tipo de comida…" autocomplete="off"></label>
+      <label class="busca"><span class="sr">Buscar prato ou loja</span><input type="search" id="v-busca" placeholder="Buscar prato, loja ou tipo de comida…" autocomplete="off"></label>
     </div>
   </section>
   <div class="container">
     <nav class="chips" id="v-chips" aria-label="Tipos de loja"></nav>
+    <!-- Produtos de todas as lojas misturados: quem tem plano mais caro aparece mais (js/vitrine-produtos.js) -->
+    <section id="v-sec-destaque" aria-label="Em destaque agora" hidden>
+      <h2 class="v-titulo">Em destaque agora</h2>
+      <div class="v-prod-faixa" id="v-prod-faixa"></div>
+    </section>
+    <section id="v-sec-produtos" aria-label="Pratos e produtos" hidden>
+      <h2 class="v-titulo">Pratos da Zona Sul</h2>
+      <div class="v-produtos" id="v-produtos"></div>
+      <button type="button" class="btn btn-linha btn-bloco v-mais" id="v-mais" hidden>Ver mais pratos</button>
+    </section>
     <h2 class="v-titulo">Lojas da Zona Sul</h2>
+    <p class="v-sub">Quer pedir direto numa loja? Entre nela aqui.</p>
     <div class="v-lojas" id="v-lojas" aria-live="polite"><div class="esqueleto"></div><div class="esqueleto"></div></div>
   </div>
 </main>
@@ -81,6 +92,7 @@
 <script src="js/plataforma.js"></script>
 <script src="js/backend.js"></script>
 <script src="js/temas.js"></script>
+<script src="js/vitrine-produtos.js"></script>
 <script src="js/vitrine.js"></script>
 <script src="js/app.js"></script>
 </body>

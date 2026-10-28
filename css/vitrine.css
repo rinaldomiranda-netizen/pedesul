@@ -56,3 +56,52 @@
 .v-video-janela::backdrop { background: rgba(5, 12, 18, .82); }
 .v-video-janela video { display: block; width: 100%; aspect-ratio: 9 / 16; border-radius: 18px; background: #08141d; }
 .v-video-fechar { position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--ouro); color: #1a0d07; font-size: 26px; font-weight: 800; cursor: pointer; z-index: 2; }
+
+/* ---- faixa de propagandas com movimento ---- */
+.v-an { position: relative; isolation: isolate; background-size: 220% 220%; animation: anFundo 9s ease-in-out infinite; padding-right: 108px; box-shadow: 0 10px 26px rgba(0,0,0,.35); }
+.v-an.com-imagem { animation: none; background-size: cover; padding-right: 18px; }
+@keyframes anFundo { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+.v-an::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.28) 50%, transparent 65%); background-size: 260% 100%; background-position: 160% 0; }
+.v-an.ativa::after { animation: anBrilho 1.4s .5s ease-out both; }
+@keyframes anBrilho { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+.v-an-conteudo { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.v-an.ativa .v-an-conteudo > * { animation: anEntra .65s cubic-bezier(.2,.8,.2,1) both; }
+.v-an.ativa .v-an-conteudo > :nth-child(2) { animation-delay: .1s; }
+.v-an.ativa .v-an-conteudo > :nth-child(3) { animation-delay: .2s; }
+.v-an.ativa .v-an-conteudo > :nth-child(4) { animation-delay: .32s; }
+@keyframes anEntra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.v-an-arte { position: absolute; z-index: 1; right: 6px; bottom: -8px; font-size: 92px; line-height: 1; transform: rotate(-10deg);
+  filter: drop-shadow(0 8px 14px rgba(0,0,0,.35)); animation: anFlutua 3.6s ease-in-out infinite; }
+.v-an.ativa .v-an-arte { animation: anArteEntra .8s cubic-bezier(.3,1.5,.5,1) both, anFlutua 3.6s .8s ease-in-out infinite; }
+@keyframes anFlutua { 0%, 100% { transform: rotate(-10deg) translateY(0); } 50% { transform: rotate(-4deg) translateY(-8px); } }
+@keyframes anArteEntra { from { opacity: 0; transform: rotate(-30deg) scale(.4) translateY(30px); } to { opacity: 1; transform: rotate(-10deg) scale(1); } }
+.v-an-bolha { position: absolute; z-index: 0; border-radius: 50%; background: rgba(255,255,255,.12); pointer-events: none; }
+.v-an-bolha.b1 { width: 150px; height: 150px; right: -40px; top: -60px; animation: anBolha 7s ease-in-out infinite; }
+.v-an-bolha.b2 { width: 70px; height: 70px; right: 110px; bottom: -30px; background: rgba(255,255,255,.08); animation: anBolha 9s 1s ease-in-out infinite reverse; }
+@keyframes anBolha { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-14px, 10px) scale(1.12); } }
+.v-an-acao { transition: transform .15s; }
+.v-an:hover .v-an-acao { transform: translateX(4px); }
+/* pontos: o da vez é uma barrinha que enche até a próxima propaganda */
+.v-an-pontos button { position: relative; overflow: hidden; transition: width .3s; }
+.v-an-pontos button[aria-current="true"] { width: 30px; background: rgba(242,85,44,.35); }
+.v-an-pontos button[aria-current="true"]::after { content: ""; position: absolute; inset: 0; background: var(--ouro); transform-origin: left; transform: scaleX(1); }
+.v-an-pontos button.enchendo::after { animation: anEnche 5s linear both; }
+@keyframes anEnche { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ---- logo com movimento: o alfinete cai, o sol nasce e brilha, o mar balança ---- */
+.v-marca .lg-pino { transform-box: fill-box; transform-origin: 50% 100%; animation: lgCai .9s cubic-bezier(.3,1.45,.55,1) both; }
+@keyframes lgCai { 0% { transform: translateY(-40%) scale(.85); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; } }
+.v-marca .lg-sol { transform-box: fill-box; transform-origin: 50% 50%; animation: lgNasce 1.4s .5s ease-out both, lgBrilha 3s 2s ease-in-out infinite; }
+@keyframes lgNasce { from { transform: translateY(9px); } to { transform: none; } }
+@keyframes lgBrilha { 0%, 100% { filter: drop-shadow(0 0 0 rgba(255,182,39,0)); } 50% { filter: drop-shadow(0 0 4px rgba(255,214,107,.95)); } }
+.v-marca .lg-onda1 { animation: lgOnda 3.2s ease-in-out infinite; }
+.v-marca .lg-onda2 { animation: lgOnda 4s .4s ease-in-out infinite reverse; }
+@keyframes lgOnda { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(5px, 1.2px); } }
+.v-marca:hover .lg-pino { animation: lgPula .6s ease-out; }
+@keyframes lgPula { 0%, 100% { transform: none; } 40% { transform: translateY(-10%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .v-an, .v-an::after, .v-an-arte, .v-an-bolha, .v-an.ativa .v-an-conteudo > *, .v-an.ativa .v-an-arte, .v-an-pontos button.enchendo::after,
+  .v-marca .lg-pino, .v-marca .lg-sol, .v-marca .lg-onda1, .v-marca .lg-onda2 { animation: none !important; }
+}

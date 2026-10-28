@@ -35,6 +35,12 @@
   // ---------------------------------------------------------------- faixa de propagandas
 
   var SELO = { loja: 'Loja Pede Sul', promocao: 'Promoção', destaque: 'Destaque', patrocinador: 'Patrocinado' };
+  var ARTE = { loja: '🍽️', promocao: '🔥', destaque: '🎉', patrocinador: '📣' };
+  // a mesma cor, mais escura: o fundo da propaganda vira um degradê que se mexe
+  function escurecer(hex, f) {
+    var n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    return 'rgb(' + Math.round(r * f) + ',' + Math.round(g * f) + ',' + Math.round(b * f) + ')';
+  }
   function linkDe(a) {
     if (a.loja) return { href: 'loja.html?loja=' + encodeURIComponent(a.loja), fora: false };
     if (a.link && /^https:\/\//.test(a.link)) return { href: a.link, fora: true };
@@ -48,11 +54,14 @@
       var cor = /^#[0-9a-fA-F]{6}$/.test(a.cor || '') ? a.cor : '#f2552c';
       var img = a.imagem_url && /^(https:\/\/|assets\/|data:image\/(png|jpeg|webp);base64,)/.test(a.imagem_url) ? a.imagem_url : null;
       var l = linkDe(a);
-      var dentro = '<span class="v-an-selo' + (a.tipo === 'patrocinador' ? ' patro' : '') + '">' + esc(SELO[a.tipo] || '') + (a.tipo === 'patrocinador' && a.anunciante ? ' · ' + esc(a.anunciante) : '') + '</span>' +
+      var dentro = '<i class="v-an-bolha b1" aria-hidden="true"></i><i class="v-an-bolha b2" aria-hidden="true"></i>' +
+        (img ? '' : '<span class="v-an-arte" aria-hidden="true">' + (ARTE[a.tipo] || '✨') + '</span>') +
+        '<span class="v-an-conteudo"><span class="v-an-selo' + (a.tipo === 'patrocinador' ? ' patro' : '') + '">' + esc(SELO[a.tipo] || '') + (a.tipo === 'patrocinador' && a.anunciante ? ' · ' + esc(a.anunciante) : '') + '</span>' +
         '<strong>' + esc(a.titulo) + '</strong>' + (a.texto ? '<span class="v-an-texto">' + esc(a.texto) + '</span>' : '') +
-        (l ? '<span class="v-an-acao">' + (l.fora ? 'Saiba mais ›' : 'Ver a loja ›') + '</span>' : '');
-      var estilo = 'background-color:' + esc(cor) + (img ? ';background-image:linear-gradient(90deg,rgba(0,0,0,.62),rgba(0,0,0,.08)),url(&quot;' + esc(img) + '&quot;)' : '');
-      var attrs = ' class="v-an" role="group" aria-roledescription="propaganda" aria-label="' + (i + 1) + ' de ' + lista.length + '" data-i="' + i + '" style="' + estilo + '"';
+        (l ? '<span class="v-an-acao">' + (l.fora ? 'Saiba mais ›' : 'Ver a loja ›') + '</span>' : '') + '</span>';
+      var estilo = 'background-color:' + esc(cor) + (img ? ';background-image:linear-gradient(90deg,rgba(0,0,0,.62),rgba(0,0,0,.08)),url(&quot;' + esc(img) + '&quot;)'
+        : ';background-image:linear-gradient(120deg,' + esc(cor) + ' 0%,' + escurecer(cor, 0.62) + ' 45%,' + esc(cor) + ' 70%,' + escurecer(cor, 0.8) + ' 100%)');
+      var attrs = ' class="v-an' + (img ? ' com-imagem' : '') + (i === st.atual ? ' ativa' : '') + '" role="group" aria-roledescription="propaganda" aria-label="' + (i + 1) + ' de ' + lista.length + '" data-i="' + i + '" style="' + estilo + '"';
       return l ? '<a' + attrs + ' href="' + esc(l.href) + '"' + (l.fora ? ' target="_blank" rel="noopener sponsored"' : '') + '>' + dentro + '</a>' : '<div' + attrs + '>' + dentro + '</div>';
     }).join('');
     $('#v-an-pontos').innerHTML = lista.length > 1 ? lista.map(function (a, i) {
@@ -72,6 +81,13 @@
     Array.prototype.forEach.call(document.querySelectorAll('#v-an-pontos button'), function (b, k) {
       if (k === st.atual) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
     });
+    // a propaganda da vez entra com animação (o texto sobe e a ilustração aparece)
+    Array.prototype.forEach.call(document.querySelectorAll('#v-an-trilho .v-an'), function (el, k) {
+      if (k === st.atual) el.classList.add('ativa'); else el.classList.remove('ativa');
+    });
+    // a barrinha do ponto da vez enche em 5 s (recomeça a cada troca)
+    var p = document.querySelector('#v-an-pontos button[aria-current]');
+    if (p) { p.classList.remove('enchendo'); void p.offsetWidth; if (!semMovimento) p.classList.add('enchendo'); }
   }
   var semMovimento = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function iniciarGiro() {

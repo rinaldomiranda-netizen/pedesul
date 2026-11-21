@@ -12,3 +12,4 @@ self.addEventListener('fetch', function (e) {
     return resp;
   }).catch(function () { return caches.match(req); }));
 });
+/* endereco-proprio-20261120 */

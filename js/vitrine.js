@@ -146,7 +146,8 @@
   function corOk(c) { return /^#[0-9a-fA-F]{6}$/.test(c || '') ? c : '#f2552c'; }
   function linkProduto(p) { return 'loja.html?loja=' + encodeURIComponent(p.loja) + '&produto=' + encodeURIComponent(p.id); }
   function fotoProduto(p) {
-    var img = p.imagem_url && IMG_OK.test(p.imagem_url) ? '<img src="' + esc(p.imagem_url) + '" alt="" loading="lazy">' : '<span aria-hidden="true">' + esc(p.icone || p.loja_icone || '🍽️') + '</span>';
+    var foto = p.imagem_url && IMG_OK.test(p.imagem_url) ? p.imagem_url : (window.AterrisseNucleo && window.AterrisseNucleo.fotoPadrao ? window.AterrisseNucleo.fotoPadrao(p.nome, p.segmento) : null);
+    var img = foto ? '<img src="' + esc(foto) + '" alt="" loading="lazy" onerror="this.remove()">' : '<span aria-hidden="true">' + esc(p.icone || p.loja_icone || '🍽️') + '</span>';
     return '<span class="v-prod-foto" style="background:' + esc(corOk(p.loja_cor)) + '">' + img +
       (p.demonstracao ? '<em class="v-prod-exemplo">Exemplo</em>' : '') + (p.aberto === false ? '<em class="v-prod-fechada">Loja fechada</em>' : '') + '</span>';
   }

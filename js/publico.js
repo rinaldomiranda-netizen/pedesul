@@ -95,7 +95,7 @@
     if (horaSimulada) h += '<div class="faixa faixa-aviso">🕒 Hora simulada: ' + esc(horaSimulada) + ' (Maceió). Tire “?simular_hora” do endereço para voltar ao normal.</div>';
     var l = estado.cardapio && estado.cardapio.loja;
     // na demonstração (vitrine) fica só a barra "DEMONSTRAÇÃO" do topo, sem faixas repetidas
-    if (api.modo !== 'demo' && !api.vitrine && l && l.modo === 'demo' && l.liberada !== false) h += '<div class="faixa faixa-demo" role="note">🧪 Versão de demonstração — os pedidos chegam ao painel marcados como TESTE. Preços com “Exemplo” são fictícios.</div>';
+    // 22/11/2026 (pedido do Rinaldo): loja em teste não mostra mais faixa de demonstração para o cliente; o painel continua marcando TESTE
     if (l && l.liberada === false) h += '<div class="faixa faixa-fechado" role="alert">Cardápio temporariamente indisponível.</div>';
     if (l && !l.aberto) h += '<div class="faixa faixa-fechado" role="alert">O restaurante não está recebendo pedidos agora. Você pode ver o cardápio.</div>';
     if (l && l.aviso && !api.vitrine) h += '<div class="faixa faixa-aviso">' + esc(l.aviso) + '</div>';
@@ -230,31 +230,7 @@
 
   // Fotos reais de exemplo por tipo de comida (Unsplash, uso comercial livre; a da tapioca é do folheto da Litoral).
   // Só entram quando o produto não tem foto própria, e aparecem marcadas como "imagem ilustrativa".
-  var U = function (id) { return 'https://images.unsplash.com/photo-' + id + '?auto=format&fit=crop&w=640&q=70'; };
-  var FOTOS = [
-    [/suco|polpa|vitamina|smoothie/, U('1641659735894-45046caad624')],
-    [/a[çc]a[ií]/, [U('1627308594190-a057cd4bfac8'), U('1520251715762-b726a31d6149')]],
-    [/tapioca|beiju|crepe/, 'assets/fotos/tapioca.jpg'],
-    [/hot.?dog|cachorro/, U('1599599810694-b5b37304c041')],
-    [/burg|hamb[uú]rg|x-|misto|americano|eggs|alasanhado|especial|lanche|combo|sandu[ií]che natural/, [U('1534790566855-4cb788d389ec'), U('1563551342926-21cc8d785013')]],
-    [/batata|frita|por[çc][ãa]o|acompanhamento|an[ée]is/, U('1463183665146-ce2ed31df6b0')],
-    [/caf[ée]|expresso|cappuccino/, U('1755284489379-e32c84a185ec')],
-    [/bolo|doce|brownie|torta|sobremesa/, U('1651378527289-36b9e2b8be58')],
-    [/salgad|croissant|sandu[ií]che|delicatessen|p[ãa]o/, U('1736109913187-5fceb59dadf4')],
-    [/refri|bebida|coca|guaran|fanta|sprite|[áa]gua|lata|litro|cerveja|amstel|guar[áa]|pitchulinha|drink/, U('1544241907-f3f1f5ded15a')],
-    [/quentinha|almo[çc]o|marmita|prato|jantar|cuscuz|macaxeira|escondidinho|bai[ãa]o|carne|frango|caldinho/, U('1683315445782-48b2459c234d')]
-  ];
-  function fotoPadrao(p, c) {
-    var t = normalizar(p.nome + ' ' + ((c && c.nome) || '') + ' ' + ((c && c.slug) || ''));
-    for (var i = 0; i < FOTOS.length; i++) {
-      if (!FOTOS[i][0].test(t)) continue;
-      var f = FOTOS[i][1];
-      if (typeof f === 'string') return f;
-      var h = 0; for (var k = 0; k < p.nome.length; k++) h = (h * 31 + p.nome.charCodeAt(k)) % 997;  // mesma foto sempre para o mesmo produto
-      return f[h % f.length];
-    }
-    return null;
-  }
+  function fotoPadrao(p, c) { return N.fotoPadrao(p.nome, ((c && c.nome) || '') + ' ' + ((c && c.slug) || '')); }
   function trocarCategoria(slug) {
     estado.cat = slug;
     if (estado.busca) { estado.busca = ''; var b = $('#busca'); if (b) b.value = ''; }
@@ -568,7 +544,6 @@
     if (f.observacoes) h += '<div>Obs.: ' + esc(f.observacoes) + '</div>';
     h += '</div>' + htmlTotais(f.modalidade);
     if (api.modo === 'demo') h += '<div class="erros-lista" style="background:#3b2a06;color:var(--aviso)">Modo demonstração: o pedido fica só neste aparelho e não chega ao restaurante.</div>';
-    else if (estado.cardapio.loja.modo === 'demo') h += '<div class="erros-lista" style="background:#3b2a06;color:var(--aviso)">Versão de demonstração: o pedido chega ao painel do restaurante marcado como TESTE.</div>';
     h += '<p style="font-size:12px;color:var(--texto-2)">O valor final é conferido pelo restaurante no momento do envio.</p>';
     h += '<div class="erros-lista" id="erro-envio" role="alert">' + esc(estado.erroEnvio || '') + '</div>';
     h += '<div class="rodape-janela"><button class="btn btn-ouro" type="button" data-acao="enviar"' + (estado.enviando ? ' disabled' : '') + ' autofocus>' + (estado.enviando ? 'Enviando…' : 'Enviar pedido') + '</button></div>';
@@ -613,7 +588,6 @@
     var h = cabecalho(p.demo ? 'Pedido de demonstração' : 'Pedido enviado!');
     h += '<div class="sucesso"><div>Número do pedido</div><div class="numero">#' + esc(p.numero) + '</div>';
     h += p.demo ? '<p style="color:var(--aviso)"><b>Modo demonstração:</b> este pedido ficou só neste aparelho. Ele NÃO foi enviado ao restaurante.</p>'
-      : p.teste ? '<p>O pedido chegou ao painel do restaurante como <b>pedido de TESTE</b> (versão de demonstração). Guarde o número.</p>'
       : '<p>O restaurante recebeu o seu pedido. Guarde o número.</p>';
     var ordem = p.modalidade === 'entrega' ? ['RECEBIDO', 'ACEITO', 'EM_PREPARACAO', 'PRONTO', 'SAIU_PARA_ENTREGA', 'ENTREGUE'] : ['RECEBIDO', 'ACEITO', 'EM_PREPARACAO', 'PRONTO', 'CONCLUIDO'];
     if (p.status === 'CANCELADO') h += '<p class="erros-lista">Este pedido foi cancelado. Fale com o restaurante pelo WhatsApp.</p>';

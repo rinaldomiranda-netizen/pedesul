@@ -162,6 +162,38 @@
     return Number((loja && loja.taxa_entrega) || 0);
   }
 
+  // Fotos reais de exemplo por tipo de comida (Unsplash, uso comercial livre; a da tapioca é do folheto da Litoral).
+  // Só entram quando o produto não tem foto própria; quem mostra marca como "imagem ilustrativa".
+  var U = function (id) { return 'https://images.unsplash.com/photo-' + id + '?auto=format&fit=crop&w=640&q=70'; };
+  var FOTOS = [
+    [/suco|polpa|vitamina|smoothie/, U('1641659735894-45046caad624')],
+    [/a[çc]a[ií]/, [U('1627308594190-a057cd4bfac8'), U('1520251715762-b726a31d6149')]],
+    [/tapioca|beiju|crepe/, 'assets/fotos/tapioca.jpg'],
+    [/hot.?dog|cachorro/, U('1599599810694-b5b37304c041')],
+    [/burg|hamb[uú]rg|x-|misto|americano|eggs|alasanhado|especial|lanche|combo|sandu[ií]che natural/, [U('1534790566855-4cb788d389ec'), U('1563551342926-21cc8d785013')]],
+    [/batata|frita|por[çc][ãa]o|acompanhamento|an[ée]is/, U('1463183665146-ce2ed31df6b0')],
+    [/caf[ée]|expresso|cappuccino/, U('1755284489379-e32c84a185ec')],
+    [/bolo|doce|brownie|torta|sobremesa/, U('1651378527289-36b9e2b8be58')],
+    [/salgad|croissant|sandu[ií]che|delicatessen|p[ãa]o/, U('1736109913187-5fceb59dadf4')],
+    [/refri|bebida|coca|guaran|fanta|sprite|[áa]gua|lata|litro|cerveja|amstel|guar[áa]|pitchulinha|drink/, U('1544241907-f3f1f5ded15a')],
+    [/quentinha|almo[çc]o|marmita|prato|jantar|cuscuz|macaxeira|escondidinho|bai[ãa]o|carne|frango|caldinho/, U('1683315445782-48b2459c234d')]
+  ];
+  function fotoPadrao(nome, extra) {
+    var limpo = function (x) { return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); };
+    // primeiro s\u00f3 o nome do prato; se n\u00e3o reconhecer, usa tamb\u00e9m a categoria / o tipo da loja
+    return escolherFoto(limpo(nome), nome) || escolherFoto(limpo(nome) + ' ' + limpo(extra), nome);
+  }
+  function escolherFoto(t, nome) {
+    for (var i = 0; i < FOTOS.length; i++) {
+      if (!FOTOS[i][0].test(t)) continue;
+      var f = FOTOS[i][1];
+      if (typeof f === 'string') return f;
+      var h = 0, s = String(nome || ''); for (var k = 0; k < s.length; k++) h = (h * 31 + s.charCodeAt(k)) % 997;
+      return f[h % f.length];
+    }
+    return null;
+  }
+
   // Sacola: [{ chave, produto_id, quantidade, adicionais:[ids], removidos:[], observacao }]
   function totaisSacola(sacola, cardapio, modalidade, bairro) {
     var loja = (cardapio && cardapio.loja) || {};
@@ -408,7 +440,7 @@
     reais: reais, dataHora: dataHora, diaNoFuso: diaNoFuso, minutosNoFuso: minutosNoFuso, paraMinutos: paraMinutos,
     dentroDoIntervalo: dentroDoIntervalo, destaqueAtual: destaqueAtual, conferirHorarios: conferirHorarios,
     acharProduto: acharProduto, opcoesEscolhidas: opcoesEscolhidas, precoUnitario: precoUnitario,
-    validarEscolha: validarEscolha, totaisSacola: totaisSacola, chaveItem: chaveItem, taxaDoBairro: taxaDoBairro, chaveBairro: chaveBairro,
+    validarEscolha: validarEscolha, totaisSacola: totaisSacola, chaveItem: chaveItem, taxaDoBairro: taxaDoBairro, chaveBairro: chaveBairro, fotoPadrao: fotoPadrao,
     soDigitos: soDigitos, normalizarTelefone: normalizarTelefone, validarCheckout: validarCheckout, validarTroco: validarTroco,
     linkWhatsApp: linkWhatsApp, textoResumoPedido: textoResumoPedido,
     transicaoValida: transicaoValida, proximosStatus: proximosStatus,

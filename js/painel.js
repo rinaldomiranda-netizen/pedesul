@@ -38,7 +38,6 @@
   function renderFaixas() {
     var l = st.lojaPub, h = '';
     if (api.modo === 'demo' && !api.vitrine) h += '<div class="faixa faixa-demo" role="note">⚠️ MODO DEMONSTRAÇÃO — dados só neste navegador. Nada aqui é o servidor do restaurante.</div>';
-    else if (l && l.modo === 'demo' && !api.vitrine) h += '<div class="faixa faixa-demo" role="note">🧪 Versão de demonstração: os pedidos chegam marcados como TESTE.</div>';
     if (l && l.liberada === false) h += '<div class="faixa faixa-fechado" role="alert">Loja suspensa: o cardápio está indisponível para os clientes. Fale com a RMD.</div>';
     $('#faixas').innerHTML = h;
   }

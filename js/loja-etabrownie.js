@@ -45,7 +45,7 @@
       produto('c-verao', 1, 'Ice Cookie', promo('17,80', 'A sua nova sobremesa favorita! Cookie quentinho e macio, finalizado com Nutella e acompanhado de sorvete.'), 13.00, 'ice-cookie', { disponivel: false })
     ];
     return {
-      loja: { nome: 'Êta Brownie', logo_url: A + 'logo.png', whatsapp: '5571999999999', aberto: true,
+      loja: { nome: 'Êta Brownie', logo_url: A + 'logo.png', whatsapp: '5571986359939', aberto: true,
         aviso: 'Seu pedido é produzido após a confirmação. Entrega por motoboy de aplicativo (solicitado pelo cliente) ou retirada.',
         horario_funcionamento: 'Browneria Delivery · Salvador/BA', aceita_entrega: true, aceita_retirada: true, aceita_local: false,
         taxa_entrega: 0, taxas_bairro: [], pedido_minimo: 0, mesa_modo: 'desligado', mesas_qtd: 0, previsao_retirada_min: 30, previsao_entrega_min: 50, previsao_local_min: 30,

@@ -186,11 +186,20 @@
     var cats = categoriasOrdenadas();
     var dest = (estado.destaque && estado.destaque.categorias) || [];
     var termo = normalizar(estado.busca.trim());
-    $('#chips').innerHTML = cats.map(function (c) {
-      var agoraCat = dest.indexOf(c.slug) >= 0;
-      return '<a class="chip' + (agoraCat ? ' agora' : '') + '" href="#cat-' + esc(c.slug) + '">' + (agoraCat ? '<span class="ponto-agora" aria-hidden="true"></span>' : '') +
-        esc((c.icone ? c.icone + ' ' : '') + c.nome) + (agoraCat ? '<span class="sr"> (destaque agora)</span>' : '') + '</a>';
-    }).join('');
+    // topo com foto de comida de verdade (a do primeiro prato em destaque)
+    var heroi = document.querySelector('.heroi');
+    if (heroi && !heroi.dataset.foto) {
+      var c0 = cats[0], p0 = c0 && estado.cardapio.produtos.filter(function (x) { return x.categoria_id === c0.id; })[0];
+      var f0 = p0 && ((p0.imagem_url && /^https?:\/\//.test(p0.imagem_url)) ? p0.imagem_url : fotoPadrao(p0, c0));
+      if (f0) { heroi.dataset.foto = '1'; heroi.style.setProperty('--heroi-foto', 'url("' + String(f0).replace(/"/g, '') + '")'); heroi.classList.add('com-foto'); }
+    }
+    if (estado.cat && !cats.some(function (c) { return c.slug === estado.cat; })) estado.cat = null;
+    $('#chips').innerHTML = '<button type="button" class="chip' + (!estado.cat ? ' ativa' : '') + '" data-acao="cat" data-cat="" aria-pressed="' + !estado.cat + '">Tudo</button>' +
+      cats.map(function (c) {
+        var agoraCat = dest.indexOf(c.slug) >= 0, ativa = estado.cat === c.slug;
+        return '<button type="button" class="chip' + (agoraCat ? ' agora' : '') + (ativa ? ' ativa' : '') + '" data-acao="cat" data-cat="' + esc(c.slug) + '" aria-pressed="' + ativa + '">' +
+          (agoraCat ? '<span class="ponto-agora" aria-hidden="true"></span>' : '') + esc((c.icone ? c.icone + ' ' : '') + c.nome) + (agoraCat ? '<span class="sr"> (destaque agora)</span>' : '') + '</button>';
+      }).join('');
 
     if (estado.cardapio.loja.liberada === false) {
       alvo.innerHTML = '<div class="vazio" style="margin-top:20px"><b>Cardápio temporariamente indisponível.</b><br>Fale com o restaurante pelo WhatsApp.</div>';
@@ -200,8 +209,9 @@
       alvo.innerHTML = '<div class="vazio" style="margin-top:20px">O cardápio está vazio no momento. Fale com o restaurante pelo WhatsApp.</div>';
       return;
     }
-    var html = '', achou = 0;
+    var html = '', achou = 0, n = 0;
     cats.forEach(function (c) {
+      if (estado.cat && !termo && c.slug !== estado.cat) return;  // aba escolhida: só aquela categoria
       var prods = estado.cardapio.produtos.filter(function (p) { return p.categoria_id === c.id; });
       if (termo) prods = prods.filter(function (p) { return normalizar(p.nome + ' ' + (p.descricao || '')).indexOf(termo) >= 0; });
       if (!prods.length && termo) return;
@@ -211,28 +221,73 @@
         '<div class="secao-cab"><h2 id="t-' + esc(c.slug) + '">' + esc((c.icone ? c.icone + ' ' : '') + c.nome) + '</h2>' +
         (agoraCat ? '<span class="selo-agora">DESTAQUE AGORA</span>' : '') +
         (c.descricao ? '<p>' + esc(c.descricao) + '</p>' : '') + '</div>';
-      html += prods.length ? '<div class="grade">' + prods.map(cartaoProduto).join('') + '</div>' : '<div class="vazio">Nenhum item nesta categoria agora.</div>';
+      html += prods.length ? '<div class="grade">' + prods.map(function (p) { return cartaoProduto(p, c, n++); }).join('') + '</div>' : '<div class="vazio">Nenhum item nesta categoria agora.</div>';
       html += '</section>';
     });
     if (termo && !achou) html = '<div class="vazio" style="margin-top:20px">Nada encontrado para “' + esc(estado.busca) + '”. <button class="btn btn-linha btn-peq" type="button" data-acao="limpar-busca">Limpar busca</button></div>';
     alvo.innerHTML = html;
   }
 
-  function fotoProduto(p) {
-    var img = p.imagem_url && /^(https?:\/\/|assets\/)/.test(p.imagem_url)
-      ? '<img src="' + esc(p.imagem_url) + '" alt="" loading="lazy">' + (p.imagem_ilustrativa ? '<span class="ilustr">imagem ilustrativa</span>' : '')
+  // Fotos reais de exemplo por tipo de comida (Unsplash, uso comercial livre; a da tapioca é do folheto da Litoral).
+  // Só entram quando o produto não tem foto própria, e aparecem marcadas como "imagem ilustrativa".
+  var U = function (id) { return 'https://images.unsplash.com/photo-' + id + '?auto=format&fit=crop&w=640&q=70'; };
+  var FOTOS = [
+    [/suco|polpa|vitamina|smoothie/, U('1641659735894-45046caad624')],
+    [/a[çc]a[ií]/, [U('1627308594190-a057cd4bfac8'), U('1520251715762-b726a31d6149')]],
+    [/tapioca|beiju|crepe/, 'assets/fotos/tapioca.jpg'],
+    [/hot.?dog|cachorro/, U('1599599810694-b5b37304c041')],
+    [/burg|hamb[uú]rg|x-|misto|americano|eggs|alasanhado|especial|lanche|combo|sandu[ií]che natural/, [U('1534790566855-4cb788d389ec'), U('1563551342926-21cc8d785013')]],
+    [/batata|frita|por[çc][ãa]o|acompanhamento|an[ée]is/, U('1463183665146-ce2ed31df6b0')],
+    [/caf[ée]|expresso|cappuccino/, U('1755284489379-e32c84a185ec')],
+    [/bolo|doce|brownie|torta|sobremesa/, U('1651378527289-36b9e2b8be58')],
+    [/salgad|croissant|sandu[ií]che|delicatessen|p[ãa]o/, U('1736109913187-5fceb59dadf4')],
+    [/refri|bebida|coca|guaran|fanta|sprite|[áa]gua|lata|litro|cerveja|amstel|guar[áa]|pitchulinha|drink/, U('1544241907-f3f1f5ded15a')],
+    [/quentinha|almo[çc]o|marmita|prato|jantar|cuscuz|macaxeira|escondidinho|bai[ãa]o|carne|frango|caldinho/, U('1683315445782-48b2459c234d')]
+  ];
+  function fotoPadrao(p, c) {
+    var t = normalizar(p.nome + ' ' + ((c && c.nome) || '') + ' ' + ((c && c.slug) || ''));
+    for (var i = 0; i < FOTOS.length; i++) {
+      if (!FOTOS[i][0].test(t)) continue;
+      var f = FOTOS[i][1];
+      if (typeof f === 'string') return f;
+      var h = 0; for (var k = 0; k < p.nome.length; k++) h = (h * 31 + p.nome.charCodeAt(k)) % 997;  // mesma foto sempre para o mesmo produto
+      return f[h % f.length];
+    }
+    return null;
+  }
+  function trocarCategoria(slug) {
+    estado.cat = slug;
+    if (estado.busca) { estado.busca = ''; var b = $('#busca'); if (b) b.value = ''; }
+    renderCardapio();
+    var alvo = $('#conteudo'), barra = $('#cardapio');
+    // leva só até o começo do cardápio (sem passar pela lista inteira) e mostra a categoria surgindo
+    if (barra) {
+      var topo = alvo.getBoundingClientRect().top + window.scrollY - barra.offsetHeight - 70;
+      if (Math.abs(window.scrollY - topo) > 8) window.scrollTo({ top: Math.max(0, topo), behavior: window.scrollY > topo ? 'auto' : 'smooth' });
+    }
+    alvo.classList.remove('entrando'); void alvo.offsetWidth; alvo.classList.add('entrando');
+    var ativa = document.querySelector('#chips .chip.ativa');
+    var trilho = $('#chips');  // centraliza a aba escolhida só na faixa das abas (sem mexer na rolagem da página)
+    if (ativa && trilho) trilho.scrollTo({ left: Math.max(0, ativa.offsetLeft - trilho.clientWidth / 2 + ativa.offsetWidth / 2), behavior: 'smooth' });
+  }
+
+  function fotoProduto(p, c) {
+    var propria = p.imagem_url && /^(https?:\/\/|assets\/|data:image\/)/.test(p.imagem_url) ? p.imagem_url : null;
+    var src = propria || fotoPadrao(p, c);
+    var img = src
+      ? '<img src="' + esc(src) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">' + ((!propria || p.imagem_ilustrativa) ? '<span class="ilustr">imagem ilustrativa</span>' : '')
       : '<span aria-hidden="true">' + esc(p.icone || '🍽️') + '</span>';
     return '<div class="produto-foto">' + img + '</div>';
   }
 
-  function cartaoProduto(p) {
+  function cartaoProduto(p, c, n) {
     var esgotado = p.disponivel === false;
     var lojaFechada = !estado.cardapio.loja.aberto;
     var tags = '';
     if (p.demonstracao) tags += '<span class="etiqueta etiqueta-demo" title="Produto e preço de exemplo, ainda não confirmados pelo restaurante">Exemplo · preço a confirmar</span>';
     if (esgotado) tags += '<span class="etiqueta etiqueta-esgotado">Esgotado</span>';
     var a_partir = (p.grupos || []).some(function (g) { return g.opcoes.some(function (o) { return Number(o.preco) > 0; }); });
-    return '<article class="produto' + (esgotado ? ' esgotado' : '') + '">' + fotoProduto(p) +
+    return '<article class="produto' + (esgotado ? ' esgotado' : '') + '" style="--i:' + Math.min(n || 0, 14) + '">' + fotoProduto(p, c) +
       '<div class="produto-corpo"><div>' + tags + '</div><h3>' + esc(p.nome) + '</h3><p>' + esc(p.descricao || '') + '</p>' +
       '<div class="produto-rodape"><span class="preco">' + (a_partir ? '<small style="font-size:12px;color:var(--texto-2)">a partir de </small>' : '') + N.reais(p.preco) + '</span>' +
       '<button class="btn-add" type="button" data-acao="abrir-produto" data-id="' + esc(p.id) + '"' + (esgotado || lojaFechada ? ' disabled' : '') +
@@ -635,6 +690,7 @@
     else if (acao === 'fechar') { if (estado.etapa === 'enviado') estado.etapa = 'sacola'; fecharJanela(); }
     else if (acao === 'recarregar') { estado.erroCarga = null; $('#conteudo').innerHTML = '<div class="grade" style="margin-top:20px"><div class="esqueleto"></div><div class="esqueleto"></div></div>'; carregar(); }
     else if (acao === 'limpar-busca') { estado.busca = ''; $('#busca').value = ''; renderCardapio(); }
+    else if (acao === 'cat') trocarCategoria(alvo.dataset.cat || null);
     else if (acao === 'abrir-produto') abrirProduto(alvo.dataset.id);
     else if (acao === 'qtd-produto') { escolha.quantidade = Math.max(1, Math.min(50, escolha.quantidade + Number(alvo.dataset.delta))); $('#qtd-produto').textContent = escolha.quantidade; $('#btn-confirmar-produto').textContent = textoBotaoProduto(); }
     else if (acao === 'confirmar-produto') confirmarProduto();

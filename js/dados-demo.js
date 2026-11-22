@@ -138,7 +138,7 @@
       produto('c-bebida', 1, 'Refrigerante lata', 'Lata 350 ml.', 6, '🥤', true),
       produto('c-bebida', 2, 'Suco natural', 'Suco preparado na hora.', 9.9, '🧃', true)
     ];
-    return { loja: lojaPadrao('Conis Burger', { pix_nome: 'CONIS BURGER' }), destaques: destaquesDia(['burger', 'combo']), categorias: cats, produtos: produtos };
+    return { loja: lojaPadrao('Conis Burger', { pix_nome: 'CONIS BURGER', logo_url: 'assets/conis_logo.png', cor: '#2f6b45' }), destaques: destaquesDia(['burger', 'combo']), categorias: cats, produtos: produtos };
   }
 
   // Delicatessen de exemplo (a parte "Ohane" do pacote do CONIS).

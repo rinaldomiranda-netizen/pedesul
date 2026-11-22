@@ -103,6 +103,8 @@
   }
 
   var SISTEMA_PROPRIO = (function () {
+    // site próprio do cliente (montado por montar_sistema_proprio.py): sempre sistema próprio
+    if (window.ATERRISSE_CONFIG && window.ATERRISSE_CONFIG.SISTEMA_PROPRIO) return true;
     try {
       var k = 'pedesul_proprio_' + ((window.ATERRISSE_CONFIG && window.ATERRISSE_CONFIG.LOJA) || '');
       if (/[?&]proprio=1\b/.test(location.search)) sessionStorage.setItem(k, '1');

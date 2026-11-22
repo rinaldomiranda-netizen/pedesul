@@ -69,6 +69,8 @@
     }
     estado.destaque = estado.cardapio ? N.destaqueAtual(estado.cardapio.destaques, agora()) : null;
     renderTudo();
+    // faixa de propaganda e tema da época da loja (js/faixa-loja.js), montados uma vez
+    if (estado.cardapio && window.PedeSulFaixaLoja) window.PedeSulFaixaLoja.montar(estado.cardapio, api);
     if (produtoDoLink && estado.cardapio) {
       var idLink = produtoDoLink; produtoDoLink = '';
       if (N.acharProduto(estado.cardapio, idLink)) abrirProduto(idLink);
@@ -120,6 +122,8 @@
     // sistema próprio da loja (link com &proprio=1, ou loja fora da vitrine): nada do Pede Sul aparece
     var proprio = SISTEMA_PROPRIO || !l.na_vitrine;
     var volta = $('#voltar-vitrine'); if (volta) volta.classList.toggle('oculto', proprio);
+    var h1 = $('#titulo-heroi');  // sistema próprio: título sem o slogan do Pede Sul (Zona Sul de Aracaju)
+    if (h1 && proprio && !h1.dataset.proprio) { h1.dataset.proprio = '1'; h1.innerHTML = 'Peça agora e receba <em>na sua porta.</em>'; }
     var plat = $('#rodape-plataforma'); if (plat) plat.innerHTML = proprio ? 'Sistema próprio · tecnologia <b>RMD</b>' : 'Loja no <b>Pede Sul</b> · desenvolvido por RMD Delivery';
     $('#nome-loja').textContent = nome; $('#rodape-nome').textContent = nome;
     document.title = nome + ' | Cardápio e pedidos';
@@ -256,6 +260,17 @@
     return '<div class="produto-foto">' + img + '</div>';
   }
 
+  // "🔥 Promoção: de R$ 21,90." e "O mais vendido!" no começo da descrição viram preço riscado e selos na foto.
+  function lerSelos(desc) {
+    var t = String(desc || ''), r = { promo: null, vendido: false };
+    var m = /^\s*🔥?\s*Promo[çc][ãa]o:\s*de R\$\s*([0-9.,]+)\.?\s*/i.exec(t);
+    if (m) { r.promo = m[1].replace(/\.$/, ''); t = t.slice(m[0].length); }
+    var v = /^\s*O mais vendido!\s*/i.exec(t);
+    if (v) { r.vendido = true; t = t.slice(v[0].length); }
+    r.texto = t;
+    return r;
+  }
+
   function cartaoProduto(p, c, n) {
     var esgotado = p.disponivel === false;
     var lojaFechada = !estado.cardapio.loja.aberto;
@@ -263,9 +278,11 @@
     if (p.demonstracao) tags += '<span class="etiqueta etiqueta-demo" title="Produto e preço de exemplo, ainda não confirmados pelo restaurante">Exemplo · preço a confirmar</span>';
     if (esgotado) tags += '<span class="etiqueta etiqueta-esgotado">Esgotado</span>';
     var a_partir = (p.grupos || []).some(function (g) { return g.opcoes.some(function (o) { return Number(o.preco) > 0; }); });
-    return '<article class="produto' + (esgotado ? ' esgotado' : '') + '" style="--i:' + Math.min(n || 0, 14) + '">' + fotoProduto(p, c) +
-      '<div class="produto-corpo"><div>' + tags + '</div><h3>' + esc(p.nome) + '</h3><p>' + esc(p.descricao || '') + '</p>' +
-      '<div class="produto-rodape"><span class="preco">' + (a_partir ? '<small style="font-size:12px;color:var(--texto-2)">a partir de </small>' : '') + N.reais(p.preco) + '</span>' +
+    var info = lerSelos(p.descricao);
+    var selos = (info.promo ? '<span class="selo-foto selo-promo">Promoção</span>' : '') + (info.vendido ? '<span class="selo-foto selo-vendido">+ Vendido</span>' : '');
+    return '<article class="produto' + (esgotado ? ' esgotado' : '') + '" style="--i:' + Math.min(n || 0, 14) + '">' + fotoProduto(p, c).replace('<div class="produto-foto">', '<div class="produto-foto">' + (selos ? '<span class="selos-foto">' + selos + '</span>' : '')) +
+      '<div class="produto-corpo"><div>' + tags + '</div><h3>' + esc(p.nome) + '</h3><p>' + esc(info.texto) + '</p>' +
+      '<div class="produto-rodape"><span class="preco">' + (info.promo ? '<s class="preco-antigo">R$ ' + esc(info.promo) + '</s>' : '') + (a_partir ? '<small style="font-size:12px;color:var(--texto-2)">a partir de </small>' : '') + N.reais(p.preco) + '</span>' +
       '<button class="btn-add" type="button" data-acao="abrir-produto" data-id="' + esc(p.id) + '"' + (esgotado || lojaFechada ? ' disabled' : '') +
       ' aria-label="' + (esgotado ? 'Esgotado: ' : 'Adicionar ') + esc(p.nome) + '">' + (esgotado ? 'Esgotado' : lojaFechada ? 'Fechado' : '+ Adicionar') + '</button></div></div></article>';
   }

@@ -45,14 +45,59 @@
     natal: { nome: 'Natal', cores: ['#8f1d22', '#0e5e3a', '#ffd23f'], enfeite: 'neve', emoji: '🎄',
       saudacao: ['Feliz Natal, Zona Sul!', 'Ceia, doces e presentes: as lojas do bairro levam até você.'] },
     anonovo: { nome: 'Ano Novo', cores: ['#0c1c3d', '#3b2a6b', '#ffd23f'], enfeite: 'fogos', emoji: '🎆',
-      saudacao: ['Feliz Ano Novo!', 'Que o próximo ano venha com muito sabor. Obrigado, Zona Sul!'] }
+      saudacao: ['Feliz Ano Novo!', 'Que o próximo ano venha com muito sabor. Obrigado, Zona Sul!'] },
+    // festas da Bahia (só para lojas com região BA, pedido do Rinaldo em 22/11/2026)
+    bonfim: { nome: 'Lavagem do Bonfim', cores: ['#1d4f9c', '#f2f2f2', '#ffd23f'], enfeite: 'fitas', emoji: '🎀', regiao: 'BA',
+      saudacao: ['Lavagem do Bonfim', 'Fé, fitinha no pulso e festa em Salvador.'] },
+    iemanja: { nome: 'Festa de Iemanjá', cores: ['#0b4f8a', '#4fb3e8', '#e8f6ff'], enfeite: 'flores', emoji: '🌊', regiao: 'BA',
+      saudacao: ['Dia 2 de fevereiro', 'Dia de festa no mar do Rio Vermelho.'] },
+    doisdejulho: { nome: 'Dois de Julho', cores: ['#1d3f9c', '#c8102e', '#ffffff'], enfeite: 'estrelas', emoji: '💙', regiao: 'BA',
+      saudacao: ['Viva o Dois de Julho!', 'Independência da Bahia: orgulho baiano.'] }
   };
 
+  // Frase da faixa dentro de cada loja (sem falar da Zona Sul nem do Pede Sul). {loja} vira o nome da loja.
+  var FRASE_LOJA = {
+    carnaval: ['Carnaval com {loja}!', 'Pausa no bloco? A gente leva até você.'],
+    pascoa: ['Feliz Páscoa!', 'Domingo de Páscoa mais doce com {loja}.'],
+    maes: ['Dia das Mães', 'Surpreenda quem sempre cuidou de você. Peça na {loja}.'],
+    saojoao: ['Arraiá da {loja}!', 'Clima de São João na sua porta.'],
+    pais: ['Dia dos Pais', 'Um mimo especial para o seu pai, da {loja}.'],
+    patria: ['Semana da Pátria', 'Feriado com coisa boa em casa.'],
+    criancas: ['Dia das Crianças!', 'Alegria da criançada com a {loja}.'],
+    blackfriday: ['Black Friday', 'Aproveite as promoções da {loja}.'],
+    natal: ['Feliz Natal!', 'Adoce a ceia e os presentes com a {loja}.'],
+    anonovo: ['Feliz Ano Novo!', 'Obrigado por estar com a {loja}. Que venha muito sabor!'],
+    bonfim: ['Lavagem do Bonfim', 'Depois da caminhada, a {loja} leva até você.'],
+    iemanja: ['Odoyá!', 'Festa de Iemanjá com a {loja}.'],
+    doisdejulho: ['Viva o Dois de Julho!', 'Orgulho baiano com a {loja}.']
+  };
+  // Na Bahia algumas festas ganham frase própria
+  var FRASE_BA = {
+    carnaval: ['Carnaval de Salvador!', 'Entre um circuito e outro, a {loja} leva até você.'],
+    saojoao: ['São João da Bahia!', 'Forró, fogueira e a {loja} na sua porta.']
+  };
+  function fraseDaLoja(tema, nomeLoja, regiao) {
+    if (!tema) return null;
+    var f = (regiao === 'BA' && FRASE_BA[tema.id]) || FRASE_LOJA[tema.id] || tema.saudacao;
+    var n = String(nomeLoja || 'nossa loja');
+    return [f[0].replace('{loja}', n), f[1].replace('{loja}', n)];
+  }
+  // Lavagem do Bonfim: quinta-feira antes do 2º domingo depois do Dia de Reis (6/1)
+  function bonfim(a) {
+    var x = dia(a, 1, 7), domingos = 0;
+    while (true) { if (x.getDay() === 0 && ++domingos === 2) return somar(x, -3); x = somar(x, 1); }
+  }
+
   // Quando cada tema fica no ar no ano "a" (a ordem resolve sobreposição: o primeiro que bater vale).
-  function periodos(a) {
+  function periodos(a, regiao) {
     var p = pascoa(a), carnaval = somar(p, -47); // terça de Carnaval
     var maes = enesimo(a, 5, 0, 2), pais = enesimo(a, 8, 0, 2), sexta = enesimo(a, 11, 5, 4);
-    return [
+    var ba = regiao !== 'BA' ? [] : [
+      ['bonfim', dia(a, 1, 7), bonfim(a)],
+      ['iemanja', dia(a, 1, 27), dia(a, 2, 2)],
+      ['doisdejulho', dia(a, 7, 1), dia(a, 7, 2)]
+    ];
+    return ba.concat([
       ['anonovo', dia(a, 1, 1), dia(a, 1, 6)],
       ['carnaval', somar(carnaval, -12), somar(carnaval, 1)],
       ['pascoa', somar(p, -7), p],
@@ -64,26 +109,26 @@
       ['blackfriday', somar(sexta, -7), somar(sexta, 3)],
       ['natal', dia(a, 12, 1), dia(a, 12, 25)],
       ['anonovo', dia(a, 12, 26), dia(a, 12, 31)]
-    ];
+    ]);
   }
 
   function soData(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
   // Tema do dia (ou null). "agora" é a data do aparelho.
-  function temaDoDia(agora) {
-    var d = soData(agora || new Date()), lista = periodos(d.getFullYear());
+  function temaDoDia(agora, regiao) {
+    var d = soData(agora || new Date()), lista = periodos(d.getFullYear(), regiao);
     for (var i = 0; i < lista.length; i++) {
       if (d >= lista[i][1] && d <= lista[i][2]) return Object.assign({ id: lista[i][0], inicio: lista[i][1], fim: lista[i][2] }, TEMAS[lista[i][0]]);
     }
     return null;
   }
   // Próximos temas a partir de hoje (para o calendário da área do desenvolvedor)
-  function proximos(agora, quantos) {
-    var d = soData(agora || new Date()), lista = periodos(d.getFullYear()).concat(periodos(d.getFullYear() + 1));
+  function proximos(agora, quantos, regiao) {
+    var d = soData(agora || new Date()), lista = periodos(d.getFullYear(), regiao).concat(periodos(d.getFullYear() + 1, regiao));
     return lista.filter(function (x) { return x[2] >= d; }).slice(0, quantos || 12).map(function (x) {
       return Object.assign({ id: x[0], inicio: x[1], fim: x[2], ativo: d >= x[1] }, TEMAS[x[0]]);
     });
   }
   function porId(id) { return TEMAS[id] ? Object.assign({ id: id }, TEMAS[id]) : null; }
 
-  return { TEMAS: TEMAS, temaDoDia: temaDoDia, proximos: proximos, porId: porId, pascoa: pascoa };
+  return { TEMAS: TEMAS, temaDoDia: temaDoDia, proximos: proximos, porId: porId, pascoa: pascoa, bonfim: bonfim, fraseDaLoja: fraseDaLoja };
 });

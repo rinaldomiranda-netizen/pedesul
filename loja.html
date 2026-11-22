@@ -12,7 +12,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/marca/icone_32.png">
 <link rel="apple-touch-icon" href="assets/marca/icone_180.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="css/pedesul.css?v=202611221541">
+<link rel="stylesheet" href="css/pedesul.css?v=202611221935">
+<link rel="stylesheet" href="css/vitrine.css?v=202611221935">
 </head>
 <body>
 <div id="faixas"></div>
@@ -31,6 +32,13 @@
 </header>
 
 <div class="container oculto" id="voltar-vitrine"><a class="voltar-vitrine" href="index.html">← Todas as lojas do Pede Sul</a></div>
+<!-- Faixa de propaganda da loja: nome, promoções, destaques e parceiros (js/faixa-loja.js). Passa sozinha. -->
+<section class="v-anuncios loja-faixa" id="loja-faixa" aria-roledescription="carrossel" aria-label="Promoções e destaques da loja" hidden>
+  <div class="container">
+    <div class="v-an-trilho" id="lf-trilho" aria-live="off"></div>
+    <div class="v-an-pontos" id="lf-pontos"></div>
+  </div>
+</section>
 <main id="inicio">
   <section class="heroi" aria-labelledby="titulo-heroi">
     <div class="container">
@@ -83,15 +91,18 @@
 
 <div id="janela-raiz"></div>
 
-<script src="js/config.js?v=202611221541"></script>
-<script src="js/nucleo.js?v=202611221541"></script>
-<script src="js/dados-demo.js?v=202611221541"></script>
-<script src="js/loja-litoral.js?v=202611221541"></script>
-<script src="js/plataforma.js?v=202611221541"></script>
-<script src="js/backend.js?v=202611221541"></script>
-<script src="js/qrcode.min.js?v=202611221541"></script>
-<script src="js/pix.js?v=202611221541"></script>
-<script src="js/publico.js?v=202611221541"></script>
-<script src="js/app.js?v=202611221541"></script>
+<script src="js/config.js?v=202611221935"></script>
+<script src="js/nucleo.js?v=202611221935"></script>
+<script src="js/dados-demo.js?v=202611221935"></script>
+<script src="js/loja-litoral.js?v=202611221935"></script>
+<script src="js/loja-etabrownie.js?v=202611221935"></script>
+<script src="js/plataforma.js?v=202611221935"></script>
+<script src="js/backend.js?v=202611221935"></script>
+<script src="js/qrcode.min.js?v=202611221935"></script>
+<script src="js/pix.js?v=202611221935"></script>
+<script src="js/temas.js?v=202611221935"></script>
+<script src="js/faixa-loja.js?v=202611221935"></script>
+<script src="js/publico.js?v=202611221935"></script>
+<script src="js/app.js?v=202611221935"></script>
 </body>
 </html>

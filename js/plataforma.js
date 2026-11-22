@@ -22,6 +22,9 @@
   function lojasIniciais() {
     var agora = new Date().toISOString();
     return [
+      // Êta Brownie (Salvador): cliente em negociação (22/11/2026). Fora da vitrine; abre por loja.html?loja=etabrownie
+      { slug: 'etabrownie', nome: 'Êta Brownie', segmento: 'Browneria Delivery', icone: '🍫', cor: '#e09a5a',
+        vitrine: false, liberada: true, motivo: '', plano: 'completo', modo: 'demo', recursos: todosLigados(), criada_em: agora },
       // Litoral: cliente em negociação (22/11/2026). Na vitrine do Pede Sul e também com sistema próprio: loja.html?loja=litoral&proprio=1
       { slug: 'litoral', nome: 'Litoral Açaí e Lanches', segmento: 'Açaí, tapiocas e lanches', icone: '🍇', cor: '#a35ee0',
         vitrine: true, liberada: true, motivo: '', plano: 'completo', modo: 'demo', recursos: todosLigados(), criada_em: agora },

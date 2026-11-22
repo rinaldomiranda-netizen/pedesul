@@ -308,3 +308,33 @@ img { max-width: 100%; display: block; }
 .heroi .resumo-bloco, .destaque-faixa { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(14, 26, 36, .62) !important; border-color: rgba(255, 255, 255, .10) !important; border-radius: 16px; }
 @keyframes heroi-zoom { from { transform: scale(1.05); } to { transform: scale(1.14) translateY(-10px); } }
 @media (prefers-reduced-motion: reduce) { .heroi.com-foto::before { animation: none; } }
+/* selos na foto e preço antigo riscado (promoção) */
+.selos-foto { position: absolute; right: 8px; top: 8px; z-index: 3; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.selo-foto { font-size: 10.5px; font-weight: 900; letter-spacing: .3px; padding: 3px 9px; border-radius: 99px; color: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, .35); text-transform: uppercase; }
+.selo-promo { background: linear-gradient(135deg, #ff3d5a, #ff7a3d); }
+.selo-vendido { background: linear-gradient(135deg, #f0a400, #ffcf3d); color: #2a1a00; }
+.preco-antigo { display: block; font-size: 12px; font-weight: 600; color: #8796a0; text-decoration: line-through; line-height: 1.1; }
+
+/* ---- faixa de propaganda e tema da época dentro da loja (js/faixa-loja.js) ---- */
+.loja-faixa { background: transparent; padding: 12px 0 2px; }
+.loja-faixa .v-an { width: 100%; border: 0; font: inherit; text-align: left; cursor: pointer; }
+.loja-faixa .v-an.com-imagem { background-size: cover; background-position: center; min-height: 150px; }
+.v-an-selo.promo { background: linear-gradient(135deg, #ff3d5a, #ff7a3d); }
+.v-an-arte.com-logo { right: 14px; bottom: auto; top: 50%; margin-top: -48px; transform: none; animation: anFlutuaReto 3.6s ease-in-out infinite; }
+.v-an.ativa .v-an-arte.com-logo { animation: anFlutuaReto 3.6s ease-in-out infinite; }
+.v-an-arte.com-logo img { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,.85); background: #fff; }
+@keyframes anFlutuaReto { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.com-tema .heroi { border-bottom-color: var(--tema3); }
+.com-tema .heroi:not(.com-foto) { background: linear-gradient(160deg, var(--tema1) 0%, var(--tema2) 100%); }
+.com-tema .heroi.com-foto::after { background: linear-gradient(180deg, color-mix(in srgb, var(--tema1) 62%, transparent) 0%, rgba(8, 14, 20, .55) 55%, rgba(8, 14, 20, .94) 100%); }
+.com-tema .heroi h1 em { color: var(--tema3); }
+.heroi { position: relative; }
+.heroi .lf-enfeites { z-index: 1; }
+.heroi > .container { position: relative; z-index: 2; }
+.lf-tema-chip { margin: 0 0 8px !important; }
+.tema-saojoao .heroi > .container { padding-top: 78px; }
+.v-enfeites .confete.fita { width: 5px; height: 30px; border-radius: 3px; }
+.com-tema .barra-sacola .btn-ouro, .com-tema .btn-sacola { box-shadow: 0 0 0 2px var(--tema3); }
+@media (prefers-reduced-motion: reduce) { .v-an-arte.com-logo { animation: none !important; } }
+.lf-festas { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+.lf-festas li { background: rgba(255,255,255,.04); border: 1px solid var(--linha); border-radius: 10px; padding: 7px 10px; }

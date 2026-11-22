@@ -183,6 +183,7 @@
     if (aba === 'minhas') st.minhas = await api.minhasEntregas();
     if (aba === 'cardapio' || aba === 'horarios' || aba === 'loja' || aba === 'qrcode') st.adm = await api.cardapioCompleto();
     if (aba === 'loja') { try { st.entrega = await api.dadosEntrega(); } catch (e) { st.entrega = null; } }
+    if (aba === 'loja') { try { st.faixa = api.faixaLoja ? await api.faixaLoja() : null; } catch (e) { st.faixa = null; } }
     if (aba === 'post') { st.cardPub = await api.cardapio(); try { st.adm = await api.cardapioCompleto(); } catch (e) { st.adm = null; } }
     if (aba === 'equipe') { st.entregadores = await api.listarEntregadores(); st.equipe = await api.listarEquipe(); }
     if (aba === 'caixa') { st.caixa = await api.caixa(); st.pedidos = await api.listarPedidos(2); if (!st.cardPub) st.cardPub = await api.cardapio(); }
@@ -724,7 +725,92 @@
       '<div class="campo"><label for="lj-pixcidade">Cidade</label><input id="lj-pixcidade" maxlength="15" value="' + esc(l.pix_cidade || '') + '"></div></div></div>';
     h += '<div class="caixa"><div class="campo"><label for="lj-url">Endereço público do cardápio (para o QR Code)</label><input id="lj-url" maxlength="300" placeholder="https://…" value="' + esc(l.url_publica || '') + '"></div></div>';
     h += '<button class="btn btn-ouro" type="submit">Salvar configurações</button></form>';
+    h += telaFaixa();
     return h;
+  }
+
+  // ------------------------------------------------------------ faixa de propaganda da loja (pedido do Rinaldo, 22/11/2026)
+  // A faixa do cardápio passa sozinha: festa da época, nome da loja, promoções e destaques (automáticos) e os parceiros daqui.
+  var UFS = [['', 'Nenhuma (só as festas do Brasil todo)'], ['BA', 'Bahia (Lavagem do Bonfim, Iemanjá, Dois de Julho)'], ['SE', 'Sergipe'], ['AL', 'Alagoas'],
+    ['PE', 'Pernambuco'], ['PB', 'Paraíba'], ['RN', 'Rio Grande do Norte'], ['CE', 'Ceará'], ['PI', 'Piauí'], ['MA', 'Maranhão'], ['MG', 'Minas Gerais'],
+    ['ES', 'Espírito Santo'], ['RJ', 'Rio de Janeiro'], ['SP', 'São Paulo'], ['PR', 'Paraná'], ['SC', 'Santa Catarina'], ['RS', 'Rio Grande do Sul'],
+    ['GO', 'Goiás'], ['DF', 'Distrito Federal'], ['MT', 'Mato Grosso'], ['MS', 'Mato Grosso do Sul'], ['TO', 'Tocantins'], ['PA', 'Pará'], ['AM', 'Amazonas'],
+    ['AP', 'Amapá'], ['RR', 'Roraima'], ['RO', 'Rondônia'], ['AC', 'Acre']];
+  function dataBr(d) { return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2); }
+  function htmlProximasFestas(regiao) {
+    var T = window.PedeSulTemas;
+    if (!T) return '';
+    return '<ul class="lf-festas">' + T.proximos(new Date(), 5, regiao || null).map(function (x) {
+      return '<li><span aria-hidden="true">' + x.emoji + '</span> <b>' + esc(x.nome) + '</b> · ' + dataBr(x.inicio) + ' a ' + dataBr(x.fim) + (x.ativo ? ' <span class="etiqueta">no ar agora</span>' : '') + '</li>';
+    }).join('') + '</ul>';
+  }
+  function corParceiro(a) { return /^#[0-9a-fA-F]{6}$/.test(a.cor || '') ? a.cor : '#5b3a8f'; }
+  function htmlAnuncioParceiro(a, i) {
+    var img = a.imagem_url || '';
+    return '<div class="caixa lf-anuncio" data-an="' + i + '" style="border-left:5px solid ' + esc(corParceiro(a)) + '">' +
+      '<div class="barra-acoes" style="justify-content:space-between;margin:0 0 6px"><b>Propaganda ' + (i + 1) + '</b>' +
+      '<span><label class="chk"><input type="checkbox" data-an-campo="ativo"' + (a.ativo !== false ? ' checked' : '') + '> no ar</label> ' +
+      '<button class="btn btn-linha btn-peq" type="button" data-acao="faixa-tirar" data-i="' + i + '">Tirar</button></span></div>' +
+      '<div class="campo"><label>Título *</label><input data-an-campo="titulo" maxlength="60" placeholder="Ex.: Açaí da Dona Maria" value="' + esc(a.titulo || '') + '"></div>' +
+      '<div class="campo"><label>Texto</label><input data-an-campo="texto" maxlength="120" placeholder="Ex.: 10% de desconto mostrando esta tela" value="' + esc(a.texto || '') + '"></div>' +
+      '<div class="linha-2"><div class="campo"><label>Nome do parceiro</label><input data-an-campo="anunciante" maxlength="40" value="' + esc(a.anunciante || '') + '"></div>' +
+      '<div class="campo"><label>Cor</label><input type="color" data-an-campo="cor" value="' + esc(corParceiro(a)) + '"></div></div>' +
+      '<div class="campo"><label>Link ao tocar (opcional)</label><input data-an-campo="link" maxlength="300" placeholder="https://wa.me/55... ou https://instagram.com/..." value="' + esc(a.link || '') + '"></div>' +
+      '<div class="campo"><label>Foto (opcional)</label><input type="file" accept="image/png,image/jpeg,image/webp" data-acao="faixa-foto" data-i="' + i + '">' +
+      (img ? '<span class="ajuda"><img src="' + esc(img) + '" alt="" style="height:54px;border-radius:8px;vertical-align:middle"> foto escolhida · <button class="btn btn-linha btn-peq" type="button" data-acao="faixa-sem-foto" data-i="' + i + '">sem foto</button></span>'
+        : '<span class="ajuda">Sem foto, a propaganda usa a cor escolhida.</span>') +
+      '<input type="hidden" data-an-campo="imagem_url" value="' + esc(img) + '"></div>' +
+      '<div class="linha-2"><div class="campo"><label>Começa em (opcional)</label><input type="date" data-an-campo="inicio" value="' + esc(a.inicio || '') + '"></div>' +
+      '<div class="campo"><label>Termina em (opcional)</label><input type="date" data-an-campo="fim" value="' + esc(a.fim || '') + '"></div></div>' +
+      '<input type="hidden" data-an-campo="id" value="' + esc(a.id || '') + '"></div>';
+  }
+  function telaFaixa() {
+    var f = st.faixa;
+    if (!f) return '';
+    var h = '<h2 id="faixa-propaganda" style="margin-top:28px">Faixa de propaganda do cardápio</h2><form id="form-faixa">';
+    h += '<div class="caixa"><p style="margin-top:0">A faixa passa sozinha no topo do cardápio: <b>festa da época</b>, <b>nome da loja</b>, <b>promoções</b> e <b>destaques</b> do cardápio e as <b>propagandas de parceiros</b> abaixo.</p>' +
+      '<label class="chk"><input type="checkbox" id="fx-auto"' + (f.faixa_auto !== false ? ' checked' : '') + '> Mostrar sozinho as promoções e os destaques do cardápio</label>' +
+      '<span class="ajuda">Promoção: no produto, comece a descrição com “🔥 Promoção: de R$ 8,98.” (o preço antigo aparece riscado). Destaque: marque o produto como destaque.</span></div>';
+    h += '<div class="caixa"><div class="campo"><label for="fx-regiao">Região da loja (festas da época)</label><select id="fx-regiao">' + UFS.map(function (u) {
+      return '<option value="' + u[0] + '"' + ((f.regiao || '') === u[0] ? ' selected' : '') + '>' + esc(u[1]) + '</option>'; }).join('') + '</select>' +
+      '<span class="ajuda">Perto de cada festa o cardápio muda sozinho de cores e ganha enfeites (Carnaval, São João, Dia das Mães, Dia dos Pais, Natal...). Próximas:</span></div>' +
+      '<div id="fx-festas">' + htmlProximasFestas(f.regiao) + '</div></div>';
+    h += '<h3>Propagandas de parceiros</h3><p class="ajuda" style="margin-top:-6px">Ex.: uma lojinha amiga que quer aparecer no seu cardápio. Até 8.</p><div id="faixa-lista">' +
+      (f.anuncios || []).map(htmlAnuncioParceiro).join('') + '</div>' +
+      '<div class="barra-acoes"><button class="btn btn-linha" type="button" data-acao="faixa-mais">+ Adicionar propaganda de parceiro</button></div>' +
+      (f.indisponivel ? '<p class="faixa faixa-aviso">Para salvar parceiros e região nesta loja, a RMD ainda precisa ligar esta função no servidor.</p>' : '') +
+      '<button class="btn btn-ouro" type="submit">Salvar faixa de propaganda</button></form>';
+    return h;
+  }
+  function lerFaixa() {
+    var f = st.faixa || { anuncios: [] };
+    if ($('#fx-auto')) f.faixa_auto = $('#fx-auto').checked;
+    if ($('#fx-regiao')) f.regiao = $('#fx-regiao').value || null;
+    f.anuncios = Array.prototype.map.call(document.querySelectorAll('#faixa-lista .lf-anuncio'), function (caixa) {
+      var a = {};
+      caixa.querySelectorAll('[data-an-campo]').forEach(function (el) { a[el.dataset.anCampo] = el.type === 'checkbox' ? el.checked : el.value.trim(); });
+      return a;
+    });
+    st.faixa = f;
+    return f;
+  }
+  function redesenharFaixaLista() { $('#faixa-lista').innerHTML = (st.faixa.anuncios || []).map(htmlAnuncioParceiro).join(''); }
+  // foto do parceiro: reduzida para no máximo 900 px e guardada junto (sem serviço de arquivos)
+  function lerFotoParceiro(arquivo) {
+    return new Promise(function (ok, falha) {
+      if (!/^image\/(png|jpeg|webp)$/.test(arquivo.type)) return falha(new Error('Use uma imagem PNG, JPG ou WEBP.'));
+      if (arquivo.size > 12 * 1024 * 1024) return falha(new Error('Imagem muito grande (máximo 12 MB).'));
+      var img = new Image(), url = URL.createObjectURL(arquivo);
+      img.onload = function () {
+        var k = Math.min(1, 900 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        ok(c.toDataURL('image/jpeg', 0.78));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); falha(new Error('Não foi possível ler a imagem.')); };
+      img.src = url;
+    });
   }
 
   var LOGOS = { nova: 'assets/marca/selo_256.png', whatsapp: 'assets/marca/whatsapp_256.png' };
@@ -1148,7 +1234,20 @@
     if (!el) return;
     var a = el.dataset.acao, id = el.dataset.id;
     if (a === 'fundo') { if (ev.target === el) fecharJanela(); return; }
-    if (['entregador', 'papel-membro', 'ativo-membro'].indexOf(a) >= 0) return; // tratados no "change"
+    if (['entregador', 'papel-membro', 'ativo-membro', 'faixa-foto'].indexOf(a) >= 0) return; // tratados no "change"
+    // faixa de propaganda: acrescentar / tirar parceiro / tirar foto (sem perder o que já foi digitado)
+    if (a === 'faixa-mais' || a === 'faixa-tirar' || a === 'faixa-sem-foto') {
+      lerFaixa();
+      if (a === 'faixa-mais') {
+        if (st.faixa.anuncios.length >= 8) { alert('No máximo 8 propagandas de parceiros.'); return; }
+        st.faixa.anuncios.push({ titulo: '', texto: '', anunciante: '', link: '', imagem_url: '', cor: '#5b3a8f', ativo: true });
+      } else if (a === 'faixa-tirar') {
+        if (!confirm('Tirar esta propaganda? (só vale depois de salvar)')) return;
+        st.faixa.anuncios.splice(Number(el.dataset.i), 1);
+      } else st.faixa.anuncios[Number(el.dataset.i)].imagem_url = '';
+      redesenharFaixaLista();
+      return;
+    }
     if (a === 'fechar') fecharJanela();
     else if (a === 'sair') { if (st.timer) clearInterval(st.timer); await api.sair(); st.papel = null; telaLogin(); }
     else if (a === 'aba') irPara(el.dataset.aba);
@@ -1320,6 +1419,12 @@
 
   document.addEventListener('change', async function (ev) {
     var el = ev.target, a = el.dataset && el.dataset.acao;
+    if (el.id === 'fx-regiao' && $('#fx-festas')) { $('#fx-festas').innerHTML = htmlProximasFestas(el.value); return; }
+    if (a === 'faixa-foto' && el.files && el.files[0]) {
+      try { var foto = await lerFotoParceiro(el.files[0]); lerFaixa(); st.faixa.anuncios[Number(el.dataset.i)].imagem_url = foto; redesenharFaixaLista(); }
+      catch (e) { alert(e.message); }
+      return;
+    }
     if (a === 'montar-opcao' && montar) {
       if (el.checked) montar.marcadas.push(el.value); else montar.marcadas = montar.marcadas.filter(function (x) { return x !== el.value; });
       return;
@@ -1410,6 +1515,10 @@
       if (lista.some(function (d) { return d.titulo.length < 2 || N.paraMinutos(d.inicio) === null || N.paraMinutos(d.fim) === null; })) { alert('Preencha nome, início e fim de todos os destaques.'); return; }
       await tentar(function () { return api.salvarDestaques(lista); }, 'Horários salvos. O cardápio público passa a usar os novos horários.');
       irPara('horarios');
+    } else if (f.id === 'form-faixa') {
+      var fx = lerFaixa();
+      await tentar(function () { return api.salvarFaixa(fx); }, 'Faixa de propaganda salva. O cardápio já mostra as novidades.');
+      irPara('loja');
     } else if (f.id === 'form-loja') {
       var dados = lerLoja();
       if (!/^[0-9]{12,13}$/.test(dados.whatsapp)) { alert('WhatsApp deve ter 55 + DDD + número (ex.: 5579988476641).'); return; }

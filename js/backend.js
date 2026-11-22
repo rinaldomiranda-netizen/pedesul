@@ -34,6 +34,28 @@
     'aceita_local', 'taxa_entrega', 'pedido_minimo', 'mesa_modo', 'previsao_retirada_min', 'previsao_entrega_min', 'previsao_local_min', 'pix_chave', 'pix_nome', 'pix_cidade',
     'pagamentos', 'url_publica', 'cor', 'mesas_qtd'];
   var DOMINIO_CONTAS = 'pedesul.invalid';
+  // Confere a faixa de propaganda da loja antes de salvar (até 8 propagandas de parceiros).
+  var REGIOES = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
+  function limparFaixa(d) {
+    d = d || {};
+    var lista = Array.isArray(d.anuncios) ? d.anuncios : [];
+    if (lista.length > 8) throw Erro('No máximo 8 propagandas de parceiros.', 'FAIXA_INVALIDA');
+    var anuncios = lista.map(function (a, i) {
+      var titulo = String(a.titulo || '').replace(/\s+/g, ' ').trim(), texto = String(a.texto || '').replace(/\s+/g, ' ').trim();
+      var anunciante = String(a.anunciante || '').replace(/\s+/g, ' ').trim(), link = String(a.link || '').trim(), img = String(a.imagem_url || '').trim();
+      if (titulo.length < 2 || titulo.length > 60) throw Erro('Propaganda ' + (i + 1) + ': título com 2 a 60 letras.', 'FAIXA_INVALIDA');
+      if (texto.length > 120) throw Erro('Propaganda ' + (i + 1) + ': texto com até 120 letras.', 'FAIXA_INVALIDA');
+      if (anunciante.length > 40) throw Erro('Propaganda ' + (i + 1) + ': nome do anunciante com até 40 letras.', 'FAIXA_INVALIDA');
+      if (link && !/^https:\/\/[^\s"'<>]{4,300}$/.test(link)) throw Erro('Propaganda ' + (i + 1) + ': o link deve começar com https://', 'FAIXA_INVALIDA');
+      if (img && !/^(https:\/\/[^\s"'<>]{4,500}|assets\/[a-zA-Z0-9_\/.-]{3,120}|data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]{20,700000})$/.test(img)) throw Erro('Propaganda ' + (i + 1) + ': imagem inválida.', 'FAIXA_INVALIDA');
+      var ini = /^\d{4}-\d{2}-\d{2}$/.test(a.inicio || '') ? a.inicio : null, fim = /^\d{4}-\d{2}-\d{2}$/.test(a.fim || '') ? a.fim : null;
+      if (ini && fim && fim < ini) throw Erro('Propaganda ' + (i + 1) + ': a data final vem antes da inicial.', 'FAIXA_INVALIDA');
+      return { id: /^[a-z0-9-]{3,40}$/.test(a.id || '') ? a.id : 'pa-' + Date.now().toString(36) + i, titulo: titulo, texto: texto || null, anunciante: anunciante || null,
+        link: link || null, imagem_url: img || null, cor: /^#[0-9a-fA-F]{6}$/.test(a.cor || '') ? a.cor : '#5b3a8f', inicio: ini, fim: fim, ativo: a.ativo !== false };
+    });
+    var regiao = REGIOES.indexOf(String(d.regiao || '').toUpperCase()) >= 0 ? String(d.regiao).toUpperCase() : null;
+    return { anuncios: anuncios, regiao: regiao, faixa_auto: d.faixa_auto !== false };
+  }
 
   function escolher(obj, campos) {
     var r = {};
@@ -169,6 +191,11 @@
   BackendSupabase.prototype.chamarParceiro = function (id) { return this._daLoja('pedesul_chamar_parceiro', { p_pedido: id }); };
   BackendSupabase.prototype.cancelarParceiro = function (id) { return this._daLoja('pedesul_cancelar_parceiro', { p_pedido: id }); };
   BackendSupabase.prototype.dadosEntrega = function () { return this._daLoja('pedesul_dados_entrega'); };
+  // faixa de propaganda da própria loja (promoções, destaques, parceiros) e região das festas (supabase/005_faixa_loja.sql)
+  BackendSupabase.prototype.faixaLoja = function () {
+    return this._daLoja('pedesul_faixa_loja').catch(function () { return { anuncios: [], regiao: null, faixa_auto: true, indisponivel: true }; });
+  };
+  BackendSupabase.prototype.salvarFaixa = function (d) { return this._daLoja('pedesul_salvar_faixa', { d: limparFaixa(d) }); };
   BackendSupabase.prototype.salvarEntrega = function (d) { return this._daLoja('pedesul_salvar_entrega', { d: escolher(d, ['taxas_bairro', 'endereco']) }); };
 
   // ---- cardápio e loja
@@ -577,6 +604,21 @@
     // nome e cor também valem na vitrine da plataforma
     if (Plataforma && Plataforma.obter && Plataforma.obter(this.loja)) Plataforma.salvar(this.loja, { nome: e.loja.nome, cor: e.loja.cor || undefined });
   };
+  // faixa de propaganda da loja (demonstração: guardada neste aparelho; sem nada salvo, vale o que veio nos dados da loja)
+  BackendDemo.prototype.faixaLoja = async function () {
+    var e = this._estado(), base = null;
+    if (e.loja.anuncios === undefined || e.loja.regiao === undefined) { try { base = DadosDemo.criar(this.loja, e.loja.nome).loja; } catch (x) { base = {}; } }
+    return {
+      anuncios: copia(e.loja.anuncios !== undefined ? e.loja.anuncios : (base.anuncios || [])),
+      regiao: e.loja.regiao !== undefined ? e.loja.regiao : (base.regiao || null),
+      faixa_auto: e.loja.faixa_auto !== undefined ? e.loja.faixa_auto : (base.faixa_auto !== false)
+    };
+  };
+  BackendDemo.prototype.salvarFaixa = async function (d) {
+    this._exigirLogin(); var e = this._estado(), f = limparFaixa(d);
+    e.loja.anuncios = f.anuncios; e.loja.regiao = f.regiao; e.loja.faixa_auto = f.faixa_auto;
+    this._auditar(e, 'faixa'); this._gravar(e);
+  };
   // taxa por bairro e endereço de retirada (demonstração: guardados neste aparelho)
   BackendDemo.prototype.dadosEntrega = async function () {
     var e = this._estado();
@@ -943,5 +985,5 @@
     return new BackendDemo(undefined, undefined, { vitrine: !!cfg.VITRINE, loja: cfg.LOJA });
   }
 
-  return { criar: criar, BackendSupabase: BackendSupabase, BackendDemo: BackendDemo, Erro: Erro, OCORRENCIAS: OCORRENCIAS };
+  return { criar: criar, BackendSupabase: BackendSupabase, BackendDemo: BackendDemo, Erro: Erro, OCORRENCIAS: OCORRENCIAS, limparFaixa: limparFaixa };
 });

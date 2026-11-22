@@ -15,13 +15,16 @@
     ['entrega', 'Entrega'], ['retirada', 'Retirada no balcão'], ['local', 'Consumo na loja'],
     ['cozinha', 'Tela da cozinha'], ['entregadores', 'Entregadores'], ['oferta', 'Oferta automática ao entregador'],
     ['caixa', 'Caixa (abrir, fechar, vender no balcão)'], ['mesas', 'Mesas e garçom'], ['clientes', 'Cadastro de clientes'],
-    ['post', 'Post do dia e cardápio do dia'], ['qrcode', 'QR Code'], ['relatorios', 'Relatórios']
+    ['post', 'Post do dia e cardápio do dia'], ['qrcode', 'QR Code'], ['relatorios', 'Relatórios'], ['parceiros', 'Entregador parceiro da RMD']
   ];
   function todosLigados() { var r = {}; RECURSOS.forEach(function (x) { r[x[0]] = true; }); return r; }
 
   function lojasIniciais() {
     var agora = new Date().toISOString();
     return [
+      // Litoral: cliente em negociação (22/11/2026). Fora da vitrine até ele aceitar; abre pelo link loja.html?loja=litoral
+      { slug: 'litoral', nome: 'Litoral Açaí e Lanches', segmento: 'Açaí, tapiocas e lanches', icone: '🍇', cor: '#a35ee0',
+        vitrine: false, liberada: true, motivo: '', plano: 'completo', modo: 'demo', recursos: todosLigados(), criada_em: agora },
       { slug: 'aterrisse', nome: 'Aterrisse Restaurante', segmento: 'Quentinha e lanches', icone: '🍛', cor: '#0e7c86',
         vitrine: true, liberada: true, motivo: '', plano: 'completo', modo: 'demo', recursos: todosLigados(), criada_em: agora },
       { slug: 'conis-burger', nome: 'Conis Burger', segmento: 'Hambúrguer artesanal', icone: '🍔', cor: '#f2552c',

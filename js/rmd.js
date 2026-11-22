@@ -99,10 +99,23 @@
 
   // ---------------------------------------------------------------- telas
 
+  function precoTexto(pl) { return pl.porPedido ? N.reais(pl.porPedido) + '/pedido (máx. ' + N.reais(pl.teto) + ')' : N.reais(pl.preco) + '/mês'; }
+  function recursosBatem(pl, rec) { return Object.keys(pl.recursos).every(function (k) { return (rec[k] === undefined ? k !== 'parceiros' : rec[k] !== false) === pl.recursos[k]; }); }
   function planoDe(l) {
     var rec = l.recursos || {};
-    var r = PLANOS.filter(function (pl) { return Object.keys(pl.recursos).every(function (k) { return (rec[k] !== false) === pl.recursos[k]; }); })[0];
+    var doCadastro = PLANOS.filter(function (pl) { return pl.id === l.plano; })[0];
+    if (doCadastro && recursosBatem(doCadastro, rec)) return doCadastro.nome;
+    var r = PLANOS.filter(function (pl) { return recursosBatem(pl, rec); })[0];
     return r ? r.nome : 'Personalizado';
+  }
+  // Cobrança do mês (só com o banco): pedidos e chamados de parceiro contados pelo banco, sem valores de venda.
+  function htmlCobranca(l) {
+    if (!COM_BANCO || l.pedidos_mes === undefined) return '';
+    var real = l.modo === 'real', ped = real ? l.pedidos_mes : l.pedidos_mes_teste, cha = real ? l.chamadas_mes : l.chamadas_mes_teste;
+    var v = window.RmdPlanos.valorDoMes(l.plano, ped, cha);
+    return '<p style="font-size:13px;margin:8px 0 0">💲 <b>Este mês' + (real ? '' : ' (loja em teste: nada a cobrar)') + ':</b> ' + ped + ' pedido(s) · ' + cha + ' chamado(s) de entregador parceiro' +
+      ' · plano ' + N.reais(v.plano) + (v.chamadas ? ' + chamados ' + N.reais(v.chamadas) : '') + ' = <b>' + N.reais(real ? v.total : 0) + '</b>' +
+      (window.RmdPlanos.MES_GRATIS ? ' <span style="color:var(--texto-2)">(lembre: o 1º mês é grátis)</span>' : '') + '</p>';
   }
   function linksDa(l) {
     var base = location.href.replace(/rmd\.html.*$/, '');
@@ -122,13 +135,14 @@
       '<div class="cartao-num"><span>Sistema individual</span><strong>' + (lojas.length - naVitrine) + '</strong></div>' +
       '<div class="cartao-num"><span>Suspensas</span><strong style="color:' + (lojas.some(function (l) { return !l.liberada; }) ? 'var(--erro)' : 'var(--ok)') + '">' + lojas.filter(function (l) { return !l.liberada; }).length + '</strong></div></div>';
     h += '<div class="barra-acoes"><a class="btn btn-linha btn-peq" href="index.html" target="_blank" rel="noopener">🏖️ Abrir a vitrine</a><a class="btn btn-linha btn-peq" href="vendas.html" target="_blank" rel="noopener">💼 Página de vendas</a></div>';
-    h += '<nav class="chips" aria-label="Partes da área do desenvolvedor">' + [['lojas', '🏪 Lojas'], ['anuncios', '📣 Propagandas'], ['epocas', '🎉 Épocas'], ['planos', '💲 Planos e preços']].map(function (a) {
+    h += '<nav class="chips" aria-label="Partes da área do desenvolvedor">' + [['lojas', '🏪 Lojas'], ['parceiros', '🛵 Entregadores parceiros'], ['anuncios', '📣 Propagandas'], ['epocas', '🎉 Épocas'], ['planos', '💲 Planos e preços']].map(function (a) {
       return '<button type="button" class="chip' + (st.aba === a[0] ? ' agora' : '') + '" data-acao="aba" data-aba="' + a[0] + '" aria-pressed="' + (st.aba === a[0]) + '">' + a[1] + '</button>';
     }).join('') + '</nav>';
     if (st.aba === 'lojas') h += telaLojas(lojas);
     else if (st.aba === 'anuncios') h += telaAnuncios();
     else if (st.aba === 'epocas') h += telaEpocas();
-    else h += htmlPlanos() + '<div class="caixa"><h3 style="margin-top:0">Promoção de lançamento</h3><p style="font-size:14px;margin:0">Os ' + PROMO.vagas + ' primeiros levam o plano Completo pelo preço do Essencial (' + N.reais(PROMO.preco) + '/mês), e nos ' + PROMO.mesesMetade +
+    else if (st.aba === 'parceiros') h += telaParceiros();
+    else h += htmlPlanos() + '<div class="caixa"><h3 style="margin-top:0">Promoção de lançamento</h3><p style="font-size:14px;margin:0">Os ' + PROMO.vagas + ' primeiros levam o plano ' + esc(nomePlano(PROMO.plano)) + ' pelo preço do ' + esc(nomePlano(PROMO.pagaComo)) + ' (' + N.reais(PROMO.preco) + '/mês), e nos ' + PROMO.mesesMetade +
       ' primeiros meses ' + N.reais(PROMO.precoInicio) + '/mês. As inscrições da página de vendas vão para a lista da RMD no servidor e aparecem na área do desenvolvedor do Aterrisse.</p></div>';
     $('#conteudo').innerHTML = h;
   }
@@ -144,7 +158,7 @@
         (COM_BANCO ? ' <span class="status ' + (l.tem_admin ? 'st-PRONTO' : 'st-CANCELADO') + '">' + (l.tem_admin ? 'Dono com acesso' : 'Sem acesso do dono') + '</span>' : '') + '</div>' +
         '<button class="btn btn-linha btn-peq" type="button" data-acao="editar" data-slug="' + esc(l.slug) + '">Editar</button></div>' +
         (l.liberada ? '' : (l.motivo ? '<p style="font-size:13px;color:var(--erro);margin:6px 0 0">Motivo: ' + esc(l.motivo) + '</p>' : '')) +
-        '<div class="barra-acoes" style="margin:10px 0 0">' + linksDa(l) + '</div>' + (COM_BANCO ? htmlAcessos(l) : '') + '</div>';
+        htmlCobranca(l) + '<div class="barra-acoes" style="margin:10px 0 0">' + linksDa(l) + '</div>' + (COM_BANCO ? htmlAcessos(l) : '') + '</div>';
     }).join('');
 
     h += '<form id="form-nova" class="caixa"><h3 style="margin-top:0">+ Nova loja</h3><p style="font-size:13px;color:var(--texto-2);margin-top:0">A loja nasce liberada, com o cardápio vazio. ' +
@@ -153,7 +167,7 @@
       '<div class="campo"><label for="n-seg">Tipo de comida</label><input id="n-seg" maxlength="60" placeholder="Ex.: Açaí, Pizza, Marmita"></div></div>' +
       '<div class="linha-2"><div class="campo"><label for="n-icone">Ícone (emoji)</label><input id="n-icone" maxlength="8" value="🍽️"></div>' +
       '<div class="campo"><label for="n-cor">Cor</label><input id="n-cor" type="color" value="#f2552c"></div></div>' +
-      '<div class="campo"><label for="n-plano">Plano</label><select id="n-plano">' + PLANOS.map(function (pl) { return '<option value="' + pl.id + '"' + (pl.destaque ? ' selected' : '') + '>' + esc(pl.nome) + ' · ' + N.reais(pl.preco) + '/mês</option>'; }).join('') + '</select>' +
+      '<div class="campo"><label for="n-plano">Plano</label><select id="n-plano">' + PLANOS.map(function (pl) { return '<option value="' + pl.id + '"' + (pl.destaque ? ' selected' : '') + '>' + esc(pl.nome) + ' · ' + precoTexto(pl) + '</option>'; }).join('') + '</select>' +
       '<span class="ajuda">Plano Salão: só a parte interna (balcão, cozinha, mesas); fica fora da vitrine.</span></div>' +
       '<div class="opcoes-radio"><label class="opcao"><input type="radio" name="n-modo" value="vitrine" checked> Aparece na vitrine do Pede Sul</label>' +
       '<label class="opcao"><input type="radio" name="n-modo" value="individual"> Sistema individual (marca e endereço próprios, fora da vitrine)</label></div>' +
@@ -198,9 +212,42 @@
       '<h4>Recursos</h4><div class="barra-acoes" style="margin:0 0 6px">' + PLANOS.map(function (pl) {
         return '<button class="btn btn-linha btn-peq" type="button" data-acao="plano" data-plano="' + pl.id + '">Plano ' + esc(pl.nome) + '</button>';
       }).join('') + '</div><input type="hidden" id="e-plano" value="' + esc(l.plano || '') + '"><div style="display:flex;flex-wrap:wrap;gap:4px 16px">' + P.RECURSOS.map(function (r) {
-        return '<label class="chk"><input type="checkbox" name="rec" value="' + r[0] + '"' + (rec[r[0]] !== false ? ' checked' : '') + '> ' + esc(r[1]) + '</label>';
+        return '<label class="chk"><input type="checkbox" name="rec" value="' + r[0] + '"' + ((r[0] === 'parceiros' ? rec[r[0]] === true : rec[r[0]] !== false) ? ' checked' : '') + '> ' + esc(r[1]) + '</label>';
       }).join('') + '</div><p style="font-size:12px;color:var(--texto-2)">Recurso desligado some do painel e do cardápio da loja, e o sistema recusa se alguém tentar usar.</p>' +
       '<div class="barra-acoes"><button class="btn btn-ouro" type="submit">Salvar</button><button class="btn btn-linha" type="button" data-acao="cancelar">Cancelar</button></div></form>';
+  }
+
+  function nomePlano(id) { var pl = PLANOS.filter(function (x) { return x.id === id; })[0]; return pl ? pl.nome : id; }
+
+  // ---------------------------------------------------------------- entregadores parceiros (motoboys cadastrados pela RMD, de fora das lojas)
+  // Ficam na "loja" escondida rmd-parceiros: o acesso é criado igual ao de qualquer pessoa da equipe, com o papel Entregador.
+  // As lojas do plano Entrega Total chamam um parceiro; o primeiro que aceitar leva a entrega. Cada chamado aceito: VALOR_CHAMADA para a RMD.
+  function telaParceiros() {
+    if (!COM_BANCO) return '<div class="aviso-caixa">Os entregadores parceiros funcionam só com o banco (site publicado ou banco de teste deste computador). No modo demonstração do aparelho não há contas.</div>';
+    if (!st.parceiros) { carregarParceiros(); return '<p>Carregando…</p>'; }
+    var entrada = location.href.replace(/rmd[.]html.*$/, '') + 'parceiro.html';
+    var h = '<h2>Entregadores parceiros</h2><p style="font-size:14px;color:var(--texto-2)">Motoboys cadastrados pela RMD, de fora das lojas. As lojas do plano <b>Entrega Total</b> chamam um parceiro quando falta entregador; ' +
+      'os parceiros que estão trabalhando veem o chamado e o primeiro que aceitar leva. O parceiro fica com a taxa de entrega; a loja paga ' + N.reais(window.RmdPlanos.VALOR_CHAMADA) + ' por chamado aceito para a RMD.</p>' +
+      '<p style="font-size:14px">Entrada do parceiro no celular: <a href="' + esc(entrada) + '" target="_blank" rel="noopener">' + esc(entrada) + '</a></p>';
+    h += st.parceiros.length ? st.parceiros.map(function (x) {
+      return '<div class="caixa dev-loja"><div class="dev-loja-cab"><span class="dev-logo" style="background:#0e7c86">🛵</span><div style="flex:1;min-width:0"><h3 style="margin:0">' + esc(x.nome) + '</h3>' +
+        '<small style="color:var(--texto-2)">usuário <b>' + esc(x.usuario || '—') + '</b>' + (x.telefone ? ' · ' + esc(x.telefone) : '') + ' · ' + x.corridas_mes + ' corrida(s) neste mês</small><br>' +
+        '<span class="status ' + (x.ativo ? 'st-PRONTO' : 'st-CANCELADO') + '">' + (x.ativo ? 'Liberado' : 'Bloqueado') + '</span> ' +
+        (x.ativo ? '<span class="status ' + (x.online ? 'st-ACEITO' : 'st-RECEBIDO') + '">' + (x.online ? 'Trabalhando agora' : 'Fora do trabalho') + '</span>' : '') + '</div>' +
+        '<div class="barra-acoes" style="margin:0"><button class="btn btn-linha btn-peq" type="button" data-acao="parceiro-ativo" data-id="' + esc(x.id) + '" data-ativo="' + (x.ativo ? '0' : '1') + '" data-nome="' + esc(x.nome) + '">' + (x.ativo ? 'Bloquear' : 'Liberar') + '</button>' +
+        '<button class="btn btn-linha btn-peq" type="button" data-acao="parceiro-telefone" data-id="' + esc(x.id) + '" data-tel="' + esc(x.telefone || '') + '">Telefone</button></div></div></div>';
+    }).join('') : '<div class="vazio">Nenhum entregador parceiro ainda.</div>';
+    h += '<form class="form-acesso caixa" data-slug="rmd-parceiros"><h3 style="margin-top:0">+ Novo entregador parceiro</h3>' +
+      '<div class="barra-acoes" style="flex-wrap:wrap"><input class="entrada" name="nome" required minlength="2" maxlength="80" placeholder="Nome" aria-label="Nome">' +
+      '<input class="entrada" name="usuario" required minlength="3" maxlength="30" placeholder="Usuário (ex.: zemoto)" aria-label="Usuário" autocapitalize="none" spellcheck="false">' +
+      '<input class="entrada" name="senha" required minlength="4" maxlength="72" placeholder="Senha" aria-label="Senha" autocomplete="new-password" value="' + SENHA_TESTE + '">' +
+      '<input type="hidden" name="papel" value="entregador"><button class="btn btn-ouro btn-peq" type="submit">Criar acesso</button></div>' +
+      '<p style="font-size:12px;color:var(--texto-2);margin:6px 0 0">Antes de liberar, confira os documentos do motoboy (CNH, moto). Anote o telefone dele em "Telefone".</p></form>';
+    return h;
+  }
+  async function carregarParceiros() {
+    try { st.parceiros = await api.rmdParceiros(); } catch (e) { st.parceiros = []; alert(e.message); }
+    if (st.aba === 'parceiros') render();
   }
 
   // ---------------------------------------------------------------- épocas (tema da vitrine que liga sozinho perto de cada festa)
@@ -283,15 +330,16 @@
   }
 
   function htmlPlanos() {
-    var h = '<div class="caixa"><h3 style="margin-top:0">Planos para oferecer</h3><p style="font-size:13px;color:var(--texto-2)">Sugestão da RMD com base nos preços do mercado. Os valores são seus para decidir. Nenhum plano cobra comissão por pedido.</p><div class="grade">';
+    var h = '<div class="caixa"><h3 style="margin-top:0">Planos para oferecer</h3><p style="font-size:13px;color:var(--texto-2)">Sugestão da RMD com base nos preços do mercado (o iFood é só a referência; as taxas não foram copiadas). Os valores são seus para decidir. Nenhum plano cobra porcentagem sobre as vendas.' +
+      (window.RmdPlanos.MES_GRATIS ? ' Primeiro mês grátis em todos.' : '') + ' Chamado de entregador parceiro: ' + N.reais(window.RmdPlanos.VALOR_CHAMADA) + ' cada (o motoboy fica com a taxa de entrega).</p><div class="grade">';
     PLANOS.forEach(function (pl) {
       h += '<div class="resumo-bloco" style="margin:0;' + (pl.destaque ? 'border-color:var(--ouro)' : '') + '">' + (pl.destaque ? '<span class="selo-agora">MAIS INDICADO</span>' : '') +
         '<h3 style="margin:6px 0 2px;font-size:20px;color:var(--creme)">' + esc(pl.nome) + '</h3><div style="font-size:13px;color:var(--texto-2)">' + esc(pl.para) + '</div>' +
-        '<div class="preco" style="margin:8px 0 2px">' + N.reais(pl.preco) + '<small style="font-size:13px;color:var(--texto-2)"> /mês</small></div>' +
+        '<div class="preco" style="margin:8px 0 2px">' + (pl.porPedido ? N.reais(pl.porPedido) + '<small style="font-size:13px;color:var(--texto-2)"> /pedido · máx. ' + N.reais(pl.teto) + '/mês</small>' : N.reais(pl.preco) + '<small style="font-size:13px;color:var(--texto-2)"> /mês</small>') + '</div>' +
         '<ul style="padding-left:18px;margin:8px 0;font-size:14px">' + pl.itens.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('') + '</ul></div>';
     });
     return h + '</div><p style="font-size:13px;margin:12px 0 4px"><b>Implantação (opcional, uma vez):</b> ' + N.reais(window.RmdPlanos.IMPLANTACAO) + '.</p>' +
-      '<details style="margin-top:8px" open><summary>Comparação com o mercado (pesquisa de 27/10/2026)</summary><ul style="padding-left:18px;font-size:13px">' +
+      '<details style="margin-top:8px" open><summary>Comparação com o mercado (pesquisa de 27/10/2026; iFood conferido nos prints de 22/11/2026)</summary><ul style="padding-left:18px;font-size:13px">' +
       MERCADO.map(function (m) { return '<li><b>' + esc(m[0]) + ':</b> ' + esc(m[1]) + ' (<a href="' + esc(m[2]) + '" target="_blank" rel="noopener">fonte</a>)</li>'; }).join('') + '</ul></details></div>';
   }
 
@@ -313,7 +361,7 @@
     if (!el) return;
     var a = el.dataset.acao;
     if (a === 'sair') { if (COM_BANCO) await api.sair(); else marcarLogado(false); telaLogin(); }
-    else if (a === 'aba') { st.aba = el.dataset.aba; render(); }
+    else if (a === 'aba') { st.aba = el.dataset.aba; if (st.aba === 'parceiros') st.parceiros = null; render(); }
     else if (a === 'editar') { st.editando = el.dataset.slug; render(); var f = $('#form-loja'); if (f) f.scrollIntoView({ block: 'start' }); }
     else if (a === 'cancelar') { st.editando = null; render(); }
     else if (a === 'plano') {
@@ -327,6 +375,16 @@
       var nova = prompt('Nova senha para ' + el.dataset.nome + ' (provisória; no teste: ' + SENHA_TESTE + '):', SENHA_TESTE);
       if (nova === null) return;
       try { await api.trocarSenha(el.dataset.id, nova, el.dataset.slug); toast('Senha trocada. Passe a senha nova para a pessoa.'); } catch (e) { alert(e.message); }
+    }
+    else if (a === 'parceiro-ativo') {
+      var ativar = el.dataset.ativo === '1';
+      if (!ativar && !confirm('Bloquear ' + el.dataset.nome + '? Ele para de ver os chamados na hora.')) return;
+      try { await api.rmdSalvarParceiro({ id: el.dataset.id, ativo: ativar }); toast(ativar ? 'Parceiro liberado.' : 'Parceiro bloqueado.'); st.parceiros = null; carregarParceiros(); } catch (e) { alert(e.message); }
+    }
+    else if (a === 'parceiro-telefone') {
+      var tel = prompt('Telefone do parceiro com DDD (só números):', el.dataset.tel || '');
+      if (tel === null) return;
+      try { await api.rmdSalvarParceiro({ id: el.dataset.id, telefone: tel }); toast('Telefone salvo.'); st.parceiros = null; carregarParceiros(); } catch (e) { alert(e.message); }
     }
     else if (a === 'editar-anuncio') { st.anuncioEditando = el.dataset.id; render(); var fa = $('#form-anuncio'); if (fa) fa.scrollIntoView({ block: 'start' }); }
     else if (a === 'cancelar-anuncio') { st.anuncioEditando = null; render(); }
@@ -366,7 +424,9 @@
       if (!rec.entrega && !rec.retirada && !rec.local) { alert('Deixe pelo menos uma forma de receber pedido (entrega, retirada ou consumo na loja).'); return; }
       var lib = f.querySelector('input[name="e-lib"]:checked').value === '1';
       if (antes.liberada && !lib && !confirm('Suspender ' + antes.nome + '? O cardápio fica indisponível para os clientes.')) return;
-      var achado = PLANOS.filter(function (pl) { return Object.keys(pl.recursos).every(function (k) { return rec[k] === pl.recursos[k]; }); })[0];
+      var bate = function (pl) { return pl && Object.keys(pl.recursos).every(function (k) { return rec[k] === pl.recursos[k]; }); };
+      var escolhido = PLANOS.filter(function (pl) { return pl.id === $('#e-plano').value; })[0];
+      var achado = bate(escolhido) ? escolhido : PLANOS.filter(bate)[0];
       var campos = { nome: $('#e-nome').value.trim(), segmento: $('#e-seg').value.trim(), icone: $('#e-icone').value.trim() || '🍽️', cor: $('#e-cor').value,
         vitrine: f.querySelector('input[name="e-modo"]:checked').value === 'vitrine', liberada: lib, motivo: $('#e-motivo').value.trim(), recursos: rec,
         plano: achado ? achado.id : 'personalizado' };
@@ -382,8 +442,10 @@
       if (d.senha.length < 4) { alert('A senha precisa ter pelo menos 4 caracteres (no teste: ' + SENHA_TESTE + '). Com a loja vendendo de verdade, a pessoa cria a definitiva no primeiro acesso.'); return; }
       try {
         await api.criarAcesso(d);
-        alert('Acesso criado.\n\nLoja: ' + d.loja + '\nUsuário: ' + d.usuario + '\nSenha: a que você digitou\n\nEntrada: ' + location.href.replace(/rmd\.html.*$/, '') + (d.papel === 'entregador' ? 'entregador' : d.papel === 'cozinha' ? 'cozinha' : 'painel') + '.html?loja=' + d.loja);
-        delete st.equipe[d.loja]; await recarregar(); abrirAcessos(d.loja);
+        alert('Acesso criado.\n\nLoja: ' + d.loja + '\nUsuário: ' + d.usuario + '\nSenha: a que você digitou\n\nEntrada: ' + location.href.replace(/rmd\.html.*$/, '') + (d.loja === 'rmd-parceiros' ? 'parceiro.html' : (d.papel === 'entregador' ? 'entregador' : d.papel === 'cozinha' ? 'cozinha' : 'painel') + '.html?loja=' + d.loja));
+        delete st.equipe[d.loja];
+        if (d.loja === 'rmd-parceiros') { st.parceiros = null; return carregarParceiros(); }
+        await recarregar(); abrirAcessos(d.loja);
       } catch (e) { alert(e.message); }
     } else if (f.id === 'form-anuncio') {
       var x = { id: f.dataset.id || null, tipo: $('#a-tipo').value, loja: $('#a-loja').value || null, titulo: $('#a-titulo').value.trim(), texto: $('#a-texto').value.trim(),

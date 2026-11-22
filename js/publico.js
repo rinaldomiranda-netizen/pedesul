@@ -375,10 +375,13 @@
       '<h2 id="janela-titulo" style="flex:1">' + titulo + '</h2><button class="fechar" type="button" data-acao="fechar" aria-label="Fechar">×</button></div>';
   }
 
+  // Bairro digitado no endereço (a taxa de entrega pode mudar por bairro: Loja → Entrega, no painel)
+  function bairroAtual() { return (estado.form.endereco && estado.form.endereco.bairro) || ''; }
   function htmlTotais(modalidade) {
-    var t = N.totaisSacola(estado.sacola, estado.cardapio, modalidade);
-    var taxaTxt = modalidade === 'entrega' ? N.reais(t.taxa_entrega) : (modalidade ? 'sem taxa' : 'calculada se for entrega');
-    return '<div class="totais"><div><span>Subtotal</span><span>' + N.reais(t.subtotal) + '</span></div>' +
+    var t = N.totaisSacola(estado.sacola, estado.cardapio, modalidade, bairroAtual());
+    var porBairro = ((estado.cardapio.loja || {}).taxas_bairro || []).length > 0;
+    var taxaTxt = modalidade === 'entrega' ? (porBairro && !bairroAtual().trim() ? 'conforme o bairro' : N.reais(t.taxa_entrega)) : (modalidade ? 'sem taxa' : 'calculada se for entrega');
+    return '<div class="totais" id="totais-pedido"><div><span>Subtotal</span><span>' + N.reais(t.subtotal) + '</span></div>' +
       '<div><span>Taxa de entrega</span><span>' + taxaTxt + '</span></div>' +
       '<div class="total"><span>Total estimado</span><span>' + N.reais(t.total) + '</span></div></div>';
   }
@@ -386,7 +389,7 @@
   function htmlSacola() {
     var h = cabecalho('Sua sacola');
     if (!estado.sacola.length) return h + '<div class="vazio">Sua sacola está vazia.<br><br><button class="btn btn-ouro" type="button" data-acao="fechar">Ver cardápio</button></div>';
-    var t = N.totaisSacola(estado.sacola, estado.cardapio, estado.form.modalidade);
+    var t = N.totaisSacola(estado.sacola, estado.cardapio, estado.form.modalidade, bairroAtual());
     estado.sacola.forEach(function (i) {
       var p = N.acharProduto(estado.cardapio, i.produto_id);
       var prob = t.problemas.filter(function (x) { return x.chave === i.chave; })[0];
@@ -474,7 +477,7 @@
   function validarFormulario() {
     var f = estado.form, l = estado.cardapio.loja;
     var e = N.validarCheckout(f, l);
-    var t = N.totaisSacola(estado.sacola, estado.cardapio, f.modalidade);
+    var t = N.totaisSacola(estado.sacola, estado.cardapio, f.modalidade, bairroAtual());
     if (f.pagamento === 'dinheiro') { var et = N.validarTroco(f.troco, t.total); if (et) e.troco = et; }
     if (t.subtotal < Number(l.pedido_minimo || 0)) e.pagamento = 'Pedido mínimo de ' + N.reais(l.pedido_minimo) + '.';
     estado.errosForm = e;
@@ -601,6 +604,7 @@
       if (j.bairro) $('#f-bairro').value = j.bairro;
       msg.textContent = 'Endereço encontrado: ' + [j.logradouro, j.bairro, j.localidade + '/' + j.uf].filter(Boolean).join(' · ') + '. Agora o número.';
       lerFormulario();
+      var cxTot = $('#totais-pedido'); if (cxTot) cxTot.outerHTML = htmlTotais(estado.form.modalidade);
       var num = $('#f-numero'); if (num) num.focus();
     } catch (e) { msg.textContent = 'Sem conexão para buscar o CEP. Preencha a rua e o bairro.'; }
   }
@@ -679,6 +683,12 @@
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && $('#janela-raiz').dataset.aberta) fecharJanela(); });
 
   var tBusca = null;
+  document.addEventListener('input', function (ev) {
+    if (!ev.target || ev.target.id !== 'f-bairro') return;
+    lerFormulario();
+    var caixa = $('#totais-pedido');
+    if (caixa) caixa.outerHTML = htmlTotais(estado.form.modalidade);
+  });
   $('#busca').addEventListener('input', function (ev) {
     clearTimeout(tBusca);
     tBusca = setTimeout(function () { estado.busca = ev.target.value; renderCardapio(); }, 150);

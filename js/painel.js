@@ -183,6 +183,7 @@
 
     if (aba === 'minhas') st.minhas = await api.minhasEntregas();
     if (aba === 'cardapio' || aba === 'horarios' || aba === 'loja' || aba === 'qrcode') st.adm = await api.cardapioCompleto();
+    if (aba === 'loja') { try { st.entrega = await api.dadosEntrega(); } catch (e) { st.entrega = null; } }
     if (aba === 'post') { st.cardPub = await api.cardapio(); try { st.adm = await api.cardapioCompleto(); } catch (e) { st.adm = null; } }
     if (aba === 'equipe') { st.entregadores = await api.listarEntregadores(); st.equipe = await api.listarEquipe(); }
     if (aba === 'caixa') { st.caixa = await api.caixa(); st.pedidos = await api.listarPedidos(2); if (!st.cardPub) st.cardPub = await api.cardapio(); }
@@ -345,8 +346,21 @@
         (o.resolvida ? '' : '<div class="barra-acoes" style="margin:6px 0 0">' + (p.telefone ? '<a class="btn btn-linha btn-peq" target="_blank" rel="noopener" href="' + esc(N.linkWhatsApp(N.normalizarTelefone(p.telefone), 'Olá, ' + p.nome.split(' ')[0] + '! Aqui é do ' + ((st.lojaPub && st.lojaPub.nome) || 'restaurante') + ', sobre a entrega do pedido nº ' + p.numero + '.')) + '">WhatsApp do cliente</a>' : '') +
           '<button class="btn btn-linha btn-peq" type="button" data-acao="resolver-ocorrencia" data-id="' + esc(p.id) + '" data-i="' + i + '">Marcar resolvida</button></div>') + '</div>';
     });
-    if (p.modalidade === 'entrega' && ['ENTREGUE', 'CANCELADO'].indexOf(p.status) < 0) {
-      if (!p.entregador_id && p.status !== 'SAIU_PARA_ENTREGA' && ((st.lojaPub || {}).recursos || {}).oferta !== false) {
+    var temParceiro = ((st.lojaPub || {}).recursos || {}).parceiros === true && api.modo === 'supabase';
+    if (p.modalidade === 'entrega' && ['ENTREGUE', 'CANCELADO'].indexOf(p.status) < 0 && p.parceiro_id) {
+      h += '<div class="resumo-bloco"><b>🛵 Entregador parceiro: ' + esc(p.parceiro_nome || '') + '</b>' +
+        (p.parceiro_telefone ? ' · <a target="_blank" rel="noopener" href="' + esc(N.linkWhatsApp(N.normalizarTelefone(p.parceiro_telefone), 'Olá, ' + String(p.parceiro_nome || '').split(' ')[0] + '! Aqui é do ' + ((st.lojaPub && st.lojaPub.nome) || 'restaurante') + ', sobre o pedido nº ' + p.numero + '.')) + '">WhatsApp</a>' : '') +
+        '<br><small style="color:var(--texto-2)">Ele aceitou o chamado e vem buscar. Marque "Pronto" quando o pedido estiver separado.</small></div>';
+    } else if (p.modalidade === 'entrega' && ['ENTREGUE', 'CANCELADO'].indexOf(p.status) < 0) {
+      if (temParceiro && !p.entregador_id && p.status !== 'SAIU_PARA_ENTREGA') {
+        h += p.parceiro_chamado_em
+          ? '<div class="resumo-bloco"><b>🛵 Chamando entregador parceiro…</b> desde ' + esc(N.dataHora(p.parceiro_chamado_em)) +
+            '<div class="barra-acoes" style="margin:6px 0 0"><button class="btn btn-linha btn-peq" type="button" data-acao="cancelar-parceiro" data-id="' + esc(p.id) + '">Cancelar o chamado</button></div>' +
+            '<small style="color:var(--texto-2)">O primeiro parceiro que aceitar aparece aqui.</small></div>'
+          : '<div class="resumo-bloco"><button class="btn btn-linha btn-peq" type="button" data-acao="chamar-parceiro" data-id="' + esc(p.id) + '">🛵 Chamar entregador parceiro da RMD</button>' +
+            '<br><small style="color:var(--texto-2)">Para quando faltar entregador da loja. ' + N.reais((window.RmdPlanos && window.RmdPlanos.VALOR_CHAMADA) || 1.5) + ' por chamado aceito; o motoboy fica com a taxa de entrega do pedido.</small></div>';
+      }
+      if (!p.parceiro_chamado_em && !p.entregador_id && p.status !== 'SAIU_PARA_ENTREGA' && ((st.lojaPub || {}).recursos || {}).oferta !== false) {
         h += '<div class="resumo-bloco"><b>🛵 ' + esc(textoOferta(p)) + '</b>' + (p.oferta && p.oferta.recusados && p.oferta.recusados.length ? ' · ' + p.oferta.recusados.length + ' recusa(s)' : '') +
           '<div class="barra-acoes" style="margin:6px 0 0"><button class="btn btn-linha btn-peq" type="button" data-acao="oferecer" data-id="' + esc(p.id) + '">📣 Oferecer aos entregadores online</button></div>' +
           '<small style="color:var(--texto-2)">A entrega vai para o entregador online com menos entregas. Se ele recusar, passa para o próximo. Ou escolha abaixo.</small></div>';
@@ -689,6 +703,11 @@
     h += '<div class="caixa"><h3 style="margin-top:0">Modalidades</h3>' + ch('lj-ent', 'Entrega', l.aceita_entrega) + '<br>' + ch('lj-ret', 'Retirada no balcão', l.aceita_retirada) + '<br>' + ch('lj-loc', 'Consumo na loja', l.aceita_local) +
       '<div class="linha-2" style="margin-top:10px"><div class="campo"><label for="lj-taxa">Taxa de entrega (R$)</label><input id="lj-taxa" type="number" step="0.01" min="0" max="200" value="' + esc(l.taxa_entrega) + '"></div>' +
       '<div class="campo"><label for="lj-min">Pedido mínimo (R$)</label><input id="lj-min" type="number" step="0.01" min="0" value="' + esc(l.pedido_minimo) + '"></div></div>' +
+      (st.entrega ? '<div class="campo"><label for="lj-bairros">Taxa por bairro (opcional)</label><textarea id="lj-bairros" rows="5" placeholder="Um bairro por linha. Exemplo:&#10;Atalaia: 5&#10;Coroa do Meio: 6,50&#10;Farolândia: 8">' +
+        esc((st.entrega.taxas_bairro || []).map(function (x) { return x.bairro + ': ' + String(x.taxa).replace('.', ','); }).join('\n')) + '</textarea>' +
+        '<span class="ajuda">O cliente paga a taxa do bairro dele. Bairro que não estiver na lista paga a "Taxa de entrega" de cima.</span></div>' +
+        '<div class="campo"><label for="lj-endereco">Endereço da loja (onde o entregador busca)</label><input id="lj-endereco" maxlength="200" placeholder="Rua, número, bairro" value="' + esc(st.entrega.endereco || '') + '">' +
+        (st.entrega.parceiros ? '<span class="ajuda">Obrigatório para chamar o entregador parceiro da RMD.</span>' : '') + '</div>' : '') +
       '<div class="linha-2"><div class="campo"><label for="lj-pent">Previsão de entrega (min)</label><input id="lj-pent" type="number" min="0" max="240" value="' + esc(l.previsao_entrega_min || '') + '"></div>' +
       '<div class="campo"><label for="lj-pret">Previsão de retirada (min)</label><input id="lj-pret" type="number" min="0" max="240" value="' + esc(l.previsao_retirada_min || '') + '"></div></div>' +
       '<div class="campo"><label for="lj-ploc">Previsão do consumo na loja (min)</label><input id="lj-ploc" type="number" min="0" max="240" value="' + esc(l.previsao_local_min || '') + '">' +
@@ -754,6 +773,15 @@
       };
       img.onerror = function () { URL.revokeObjectURL(url); falha(new Error('Não foi possível ler a imagem.')); };
       img.src = url;
+    });
+  }
+
+  // "Atalaia: 5" / "Coroa do Meio - 6,50" / "Farolândia 8" -> [{bairro, taxa}]
+  function lerBairros(texto) {
+    return String(texto || '').split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
+      var m = /^(.+?)[\s:=-]+R?\$?\s*([0-9]+(?:[.,][0-9]{1,2})?)$/.exec(l);
+      if (!m) throw new Error('Não entendi a linha "' + l + '". Escreva assim: Atalaia: 5');
+      return { bairro: m[1].trim(), taxa: Number(m[2].replace(',', '.')) };
     });
   }
 
@@ -1148,6 +1176,15 @@
       await mudarDoDia(Number(el.dataset.k), function (g) { g.opcoes.push({ id: idNovo(), nome: nomeNovo, preco: 0, disponivel: true }); }, nomeNovo + ' acrescentado.');
     }
     else if (a === 'filtro') { st.filtro = el.dataset.filtro; render(); }
+    else if (a === 'chamar-parceiro') {
+      await tentar(function () { return api.chamarParceiro(id); }, 'Chamado enviado aos entregadores parceiros.');
+      await carregarAba(st.aba).catch(function () {}); atualizarJanelaPedido();
+    }
+    else if (a === 'cancelar-parceiro') {
+      if (!confirm('Cancelar o chamado do entregador parceiro?')) return;
+      await tentar(function () { return api.cancelarParceiro(id); }, 'Chamado cancelado.');
+      await carregarAba(st.aba).catch(function () {}); atualizarJanelaPedido();
+    }
     else if (a === 'oferecer') {
       var quem = await tentar(function () { return api.oferecerEntrega(id); });
       toast(quem ? 'Entrega oferecida a ' + quem + '.' : 'Nenhum entregador online agora.');
@@ -1382,7 +1419,14 @@
       if (dados.url_publica && !/^https?:\/\//.test(dados.url_publica)) { alert('O endereço público deve começar com https://'); return; }
       if (dados.logo_url && !/^(https:\/\/|assets\/|data:image\/(png|jpeg|webp);base64,)/.test(dados.logo_url)) { alert('Logo inválida.'); return; }
       if ($('input[name="lj-logo-tipo"]:checked') && $('input[name="lj-logo-tipo"]:checked').value === 'outra' && !dados.logo_url) { alert('Envie uma imagem ou cole o endereço da logo.'); return; }
-      await tentar(function () { return api.salvarLoja(dados); }, 'Configurações salvas.');
+      var entrega = null;
+      if ($('#lj-bairros')) {
+        try { entrega = { taxas_bairro: lerBairros($('#lj-bairros').value), endereco: $('#lj-endereco').value.trim() }; }
+        catch (e) { alert(e.message); return; }
+      }
+      await tentar(function () { return api.salvarLoja(dados); });
+      if (entrega) await tentar(function () { return api.salvarEntrega(entrega); });
+      toast('Configurações salvas.');
       irPara('loja');
     } else if (f.id === 'form-abrir-caixa') {
       await tentar(function () { return api.abrirCaixa(Number($('#cx-inicial').value), (api.sessao() || {}).email); }, 'Caixa aberto.');

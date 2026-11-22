@@ -31,7 +31,7 @@
       : restam > 0 ? '<b>Restam ' + restam + ' de ' + P.vagas + ' vagas</b> com a promoção.'
       : '<b>As ' + P.vagas + ' vagas da promoção já foram preenchidas.</b> Ainda dá para contratar pelos preços normais.';
     $('#promo').classList.toggle('esgotada', restam === 0);
-    $('#ajuda-plano').textContent = restam ? 'Com vaga na promoção, você leva o Completo pelo preço do Essencial, seja qual for o plano escolhido aqui.' : '';
+    $('#ajuda-plano').textContent = restam ? 'Com vaga na promoção, você leva o ' + planoNome(P.plano) + ' pelo preço do ' + planoNome(P.pagaComo) + ', seja qual for o plano escolhido aqui.' : '';
   }
 
   function desenharPlanos() {
@@ -42,13 +42,17 @@
         (promo ? '<span class="selo-agora">PROMOÇÃO 5 PRIMEIROS</span>' : pl.destaque ? '<span class="selo-agora">MAIS INDICADO</span>' : '') +
         '<h3>' + esc(pl.nome) + '</h3><div class="v-para">' + esc(pl.para) + '</div>' +
         (promo ? '<div class="v-valor"><s>' + N.reais(pl.preco) + '</s> ' + N.reais(P.preco) + '<small>/mês</small></div><div class="v-para">' + N.reais(P.precoInicio) + '/mês nos ' + P.mesesMetade + ' primeiros meses</div>'
+          : pl.porPedido ? '<div class="v-valor">' + N.reais(pl.porPedido) + '<small>/pedido</small></div><div class="v-para">sem mensalidade · no máximo ' + N.reais(pl.teto) + ' no mês</div>'
           : '<div class="v-valor">' + N.reais(pl.preco) + '<small>/mês</small></div><div class="v-para">ou ' + N.reais(pl.anual) + ' por ano</div>') +
         '<ul>' + pl.itens.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('') + '</ul>' +
-        // plano Salão: a inscrição online ainda não tem esse plano; o contato é pelo WhatsApp da RMD
-        (pl.interno ? '<a class="btn btn-linha btn-bloco" href="#inscricao" data-escolher-plano="' + pl.id + '">Quero o plano ' + esc(pl.nome) + '</a>' : '') + '</div>';
+        // Salão: já deixa escolhido no formulário. Pague por Pedido: a lista de inscrições do servidor ainda não tem esse plano; é pelo WhatsApp da RMD
+        (pl.porPedido ? '<a class="btn btn-linha btn-bloco" target="_blank" rel="noopener" href="' + esc(linkWhats('Olá! Quero o plano ' + pl.nome + ' do Pede Sul para o meu restaurante.')) + '">Quero o ' + esc(pl.nome) + ' (WhatsApp)</a>'
+          : pl.interno ? '<a class="btn btn-linha btn-bloco" href="#inscricao" data-escolher-plano="' + pl.id + '">Quero o plano ' + esc(pl.nome) + '</a>' : '') + '</div>';
     }).join('');
-    $('#nota-implantacao').innerHTML = '<b>Implantação (opcional, uma vez):</b> ' + N.reais(R.IMPLANTACAO) + ' — cadastro do cardápio, logo, QR Codes e treinamento da equipe. Sem comissão por pedido.';
-    $('#i-plano').innerHTML = R.PLANOS.map(function (pl) { return '<option value="' + pl.id + '"' + (pl.id === P.plano ? ' selected' : '') + '>' + esc(pl.nome) + ' (' + N.reais(pl.preco) + '/mês)</option>'; }).join('');
+    $('#nota-implantacao').innerHTML = (R.MES_GRATIS ? '<b>Primeiro mês grátis</b> em qualquer plano. ' : '') +
+      '<b>Nenhum plano cobra porcentagem sobre as vendas</b>: a loja sabe quanto vai pagar. ' +
+      '<b>Implantação (opcional, uma vez):</b> ' + N.reais(R.IMPLANTACAO) + ' — cadastro do cardápio, logo, QR Codes e treinamento da equipe.';
+    $('#i-plano').innerHTML = R.PLANOS.filter(function (pl) { return !pl.porPedido; }).map(function (pl) { return '<option value="' + pl.id + '"' + (pl.id === P.plano ? ' selected' : '') + '>' + esc(pl.nome) + ' (' + N.reais(pl.preco) + '/mês)</option>'; }).join('');
   }
 
   async function atualizarVagas() {
@@ -74,7 +78,7 @@
       var msg = 'Olá! Sou ' + d.p_responsavel + ', do ' + d.p_restaurante + (d.p_cidade ? ' (' + d.p_cidade + ')' : '') + '. Fiz a inscrição nº ' + r.numero +
         (r.promocao ? ' e garanti a promoção de lançamento do delivery.' : ' no delivery da RMD (plano ' + planoNome(d.p_plano) + ').');
       $('#resultado').innerHTML = (r.promocao
-        ? '<h2>🎉 Vaga garantida!</h2><p>Você é o restaurante <b>nº ' + r.numero + '</b>. Fica com o plano <b>Completo</b> por <b>' + N.reais(P.preco) + '/mês</b>, e nos ' + P.mesesMetade + ' primeiros meses <b>' + N.reais(P.precoInicio) + '/mês</b>.</p>'
+        ? '<h2>🎉 Vaga garantida!</h2><p>Você é o restaurante <b>nº ' + r.numero + '</b>. Fica com o plano <b>' + esc(planoNome(P.plano)) + '</b> por <b>' + N.reais(P.preco) + '/mês</b>, e nos ' + P.mesesMetade + ' primeiros meses <b>' + N.reais(P.precoInicio) + '/mês</b>.</p>'
         : '<h2>Inscrição recebida</h2><p>Você é o restaurante <b>nº ' + r.numero + '</b>. ' + (d.p_plano === 'salao' ? '' : 'As vagas da promoção já tinham acabado, mas ') +
           'A RMD vai falar com você sobre o plano ' + esc(planoNome(d.p_plano)) + '.</p>') +
         (r.repetida ? '<p class="v-nota">Este WhatsApp já estava inscrito; mostramos a inscrição que já existia.</p>' : '') +

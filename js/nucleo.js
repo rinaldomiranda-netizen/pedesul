@@ -152,8 +152,18 @@
     return erros;
   }
 
+  // Taxa de entrega por bairro (22/11/2026): igual ao banco (pedesul__taxa_bairro). Bairro fora da lista paga a taxa normal.
+  function chaveBairro(b) {
+    return String(b || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+  function taxaDoBairro(loja, bairro) {
+    var k = chaveBairro(bairro), lista = (loja && loja.taxas_bairro) || [];
+    for (var i = 0; k && i < lista.length; i++) if (chaveBairro(lista[i].bairro) === k) return Number(lista[i].taxa) || 0;
+    return Number((loja && loja.taxa_entrega) || 0);
+  }
+
   // Sacola: [{ chave, produto_id, quantidade, adicionais:[ids], removidos:[], observacao }]
-  function totaisSacola(sacola, cardapio, modalidade) {
+  function totaisSacola(sacola, cardapio, modalidade, bairro) {
     var loja = (cardapio && cardapio.loja) || {};
     var sub = 0, itens = 0, problemas = [];
     (sacola || []).forEach(function (it) {
@@ -163,7 +173,7 @@
       if (p) sub += centavos(precoUnitario(p, it.adicionais)) * Number(it.quantidade || 0);
       itens += Number(it.quantidade || 0);
     });
-    var taxa = modalidade === 'entrega' ? centavos(loja.taxa_entrega) : 0;
+    var taxa = modalidade === 'entrega' ? centavos(taxaDoBairro(loja, bairro)) : 0;
     return { subtotal: sub / 100, taxa_entrega: taxa / 100, total: (sub + taxa) / 100, itens: itens, problemas: problemas };
   }
 
@@ -398,7 +408,7 @@
     reais: reais, dataHora: dataHora, diaNoFuso: diaNoFuso, minutosNoFuso: minutosNoFuso, paraMinutos: paraMinutos,
     dentroDoIntervalo: dentroDoIntervalo, destaqueAtual: destaqueAtual, conferirHorarios: conferirHorarios,
     acharProduto: acharProduto, opcoesEscolhidas: opcoesEscolhidas, precoUnitario: precoUnitario,
-    validarEscolha: validarEscolha, totaisSacola: totaisSacola, chaveItem: chaveItem,
+    validarEscolha: validarEscolha, totaisSacola: totaisSacola, chaveItem: chaveItem, taxaDoBairro: taxaDoBairro, chaveBairro: chaveBairro,
     soDigitos: soDigitos, normalizarTelefone: normalizarTelefone, validarCheckout: validarCheckout, validarTroco: validarTroco,
     linkWhatsApp: linkWhatsApp, textoResumoPedido: textoResumoPedido,
     transicaoValida: transicaoValida, proximosStatus: proximosStatus,

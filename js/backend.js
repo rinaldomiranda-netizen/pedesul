@@ -165,6 +165,11 @@
   BackendSupabase.prototype.registrarOcorrencia = function (id, tipo, texto) { return this._daLoja('pedesul_registrar_ocorrencia', { p_pedido: id, p_tipo: tipo, p_texto: texto || null }); };
   BackendSupabase.prototype.resolverOcorrencia = function (id, indice) { return this._daLoja('pedesul_resolver_ocorrencia', { p_pedido: id, p_indice: indice }); };
   BackendSupabase.prototype.oferecerEntrega = function (id) { return this._daLoja('pedesul_oferecer_entrega', { p_pedido: id }); };
+  // entregador parceiro da RMD (plano Entrega Total) e dados de entrega da loja (taxa por bairro, endereço de retirada)
+  BackendSupabase.prototype.chamarParceiro = function (id) { return this._daLoja('pedesul_chamar_parceiro', { p_pedido: id }); };
+  BackendSupabase.prototype.cancelarParceiro = function (id) { return this._daLoja('pedesul_cancelar_parceiro', { p_pedido: id }); };
+  BackendSupabase.prototype.dadosEntrega = function () { return this._daLoja('pedesul_dados_entrega'); };
+  BackendSupabase.prototype.salvarEntrega = function (d) { return this._daLoja('pedesul_salvar_entrega', { d: escolher(d, ['taxas_bairro', 'endereco']) }); };
 
   // ---- cardápio e loja
   BackendSupabase.prototype.cardapioCompleto = function () { return this._daLoja('pedesul_cardapio_completo'); };
@@ -243,6 +248,16 @@
   BackendSupabase.prototype.rmdApagarAnuncio = function (id) { return this._rpc('pedesul_rmd_apagar_anuncio', { p_id: id }); };
   BackendSupabase.prototype.rmdErros = function (todos) { return this._rpc('pedesul_rmd_erros', { p_todos: !!todos }); };
   BackendSupabase.prototype.rmdErroResolvido = function (id, resolvido) { return this._rpc('pedesul_rmd_erro_resolvido', { p_id: id, p_resolvido: resolvido }); };
+  BackendSupabase.prototype.rmdParceiros = function () { return this._rpc('pedesul_rmd_parceiros'); };
+  BackendSupabase.prototype.rmdSalvarParceiro = function (d) { return this._rpc('pedesul_rmd_salvar_parceiro', { d: d }); };
+  // tela do entregador parceiro (conta da "loja" rmd-parceiros): chamados de todas as lojas do plano Entrega Total
+  BackendSupabase.prototype.parceiroEu = function () { return this._rpc('pedesul_parceiro_eu'); };
+  BackendSupabase.prototype.parceiroOnline = function (online) { return this._rpc('pedesul_parceiro_online', { p_online: !!online }); };
+  BackendSupabase.prototype.parceiroChamados = function () { return this._rpc('pedesul_parceiro_chamados'); };
+  BackendSupabase.prototype.parceiroAceitar = function (id) { return this._rpc('pedesul_parceiro_aceitar', { p_pedido: id }); };
+  BackendSupabase.prototype.parceiroEntregas = function () { return this._rpc('pedesul_parceiro_entregas'); };
+  BackendSupabase.prototype.parceiroStatus = function (id, para) { return this._rpc('pedesul_parceiro_status', { p_pedido: id, p_para: para }); };
+  BackendSupabase.prototype.parceiroPagamento = function (id, forma) { return this._rpc('pedesul_parceiro_pagamento', { p_pedido: id, p_forma: forma }); };
 
   // ================================================================ Demonstração (só no navegador)
 
@@ -424,7 +439,7 @@
     });
     sub = sub / 100;
     if (sub < Number(e.loja.pedido_minimo || 0)) throw Erro('Pedido mínimo de ' + N.reais(e.loja.pedido_minimo) + '.', 'PEDIDO_MINIMO');
-    var taxa = dados.modalidade === 'entrega' ? Number(e.loja.taxa_entrega || 0) : 0;
+    var taxa = dados.modalidade === 'entrega' ? N.taxaDoBairro(e.loja, dados.endereco && dados.endereco.bairro) : 0;
     var total = Math.round((sub + taxa) * 100) / 100;
     var troco = null;
     if (dados.pagamento === 'dinheiro' && dados.troco_para !== null && dados.troco_para !== undefined && dados.troco_para !== '') {
@@ -562,6 +577,29 @@
     // nome e cor também valem na vitrine da plataforma
     if (Plataforma && Plataforma.obter && Plataforma.obter(this.loja)) Plataforma.salvar(this.loja, { nome: e.loja.nome, cor: e.loja.cor || undefined });
   };
+  // taxa por bairro e endereço de retirada (demonstração: guardados neste aparelho)
+  BackendDemo.prototype.dadosEntrega = async function () {
+    var e = this._estado();
+    return { taxas_bairro: copia(e.loja.taxas_bairro || []), endereco: e.loja.endereco || null, parceiros: false, valor_chamada: 1.5, demo: true };
+  };
+  BackendDemo.prototype.salvarEntrega = async function (d) {
+    this._exigirLogin(); var e = this._estado(), vistos = {};
+    if (d.taxas_bairro) {
+      e.loja.taxas_bairro = d.taxas_bairro.map(function (x) {
+        var b = String(x.bairro || '').replace(/\s+/g, ' ').trim(), t = Number(x.taxa);
+        if (b.length < 2 || b.length > 60) throw Erro('Nome do bairro com 2 a 60 letras.', 'TAXAS_INVALIDAS');
+        if (!(t >= 0 && t <= 200)) throw Erro('Taxa inválida no bairro ' + b + ' (de 0 a 200).', 'TAXAS_INVALIDAS');
+        var k = N.chaveBairro(b);
+        if (vistos[k]) throw Erro('O bairro ' + b + ' está repetido.', 'TAXAS_INVALIDAS');
+        vistos[k] = true;
+        return { bairro: b, taxa: Math.round(t * 100) / 100 };
+      });
+    }
+    if (d.endereco !== undefined) e.loja.endereco = String(d.endereco || '').trim().slice(0, 200) || null;
+    this._auditar(e, 'entrega'); this._gravar(e);
+  };
+  BackendDemo.prototype.chamarParceiro = async function () { throw Erro('O entregador parceiro funciona só com o banco (site publicado).', 'DEMO'); };
+  BackendDemo.prototype.cancelarParceiro = BackendDemo.prototype.chamarParceiro;
   BackendDemo.prototype.salvarDestaques = async function (lista) {
     this._exigirLogin(); var e = this._estado();
     e.destaques = copia(lista); this._auditar(e, 'horarios'); this._gravar(e);

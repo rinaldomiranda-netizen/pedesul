@@ -22,9 +22,9 @@
   function lojasIniciais() {
     var agora = new Date().toISOString();
     return [
-      // Litoral: cliente em negociação (22/11/2026). Fora da vitrine até ele aceitar; abre pelo link loja.html?loja=litoral
+      // Litoral: cliente em negociação (22/11/2026). Na vitrine do Pede Sul e também com sistema próprio: loja.html?loja=litoral&proprio=1
       { slug: 'litoral', nome: 'Litoral Açaí e Lanches', segmento: 'Açaí, tapiocas e lanches', icone: '🍇', cor: '#a35ee0',
-        vitrine: false, liberada: true, motivo: '', plano: 'completo', modo: 'demo', recursos: todosLigados(), criada_em: agora },
+        vitrine: true, liberada: true, motivo: '', plano: 'completo', modo: 'demo', recursos: todosLigados(), criada_em: agora },
       { slug: 'aterrisse', nome: 'Aterrisse Restaurante', segmento: 'Quentinha e lanches', icone: '🍛', cor: '#0e7c86',
         vitrine: true, liberada: true, motivo: '', plano: 'completo', modo: 'demo', recursos: todosLigados(), criada_em: agora },
       { slug: 'conis-burger', nome: 'Conis Burger', segmento: 'Hambúrguer artesanal', icone: '🍔', cor: '#f2552c',

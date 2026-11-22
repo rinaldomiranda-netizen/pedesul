@@ -102,11 +102,23 @@
     $('#faixas').innerHTML = h;
   }
 
+  var SISTEMA_PROPRIO = (function () {
+    try {
+      var k = 'pedesul_proprio_' + ((window.ATERRISSE_CONFIG && window.ATERRISSE_CONFIG.LOJA) || '');
+      if (/[?&]proprio=1\b/.test(location.search)) sessionStorage.setItem(k, '1');
+      else if (/[?&]proprio=0\b/.test(location.search)) sessionStorage.removeItem(k);
+      return sessionStorage.getItem(k) === '1';
+    } catch (e) { return /[?&]proprio=1\b/.test(location.search); }
+  })();
+
   function renderTopo() {
     var l = (estado.cardapio && estado.cardapio.loja) || {};
     var nome = l.nome || 'Loja';
     if (l.cor && /^#[0-9a-fA-F]{6}$/.test(l.cor)) document.documentElement.style.setProperty('--ouro', l.cor);
-    var volta = $('#voltar-vitrine'); if (volta) volta.classList.toggle('oculto', !l.na_vitrine);
+    // sistema próprio da loja (link com &proprio=1, ou loja fora da vitrine): nada do Pede Sul aparece
+    var proprio = SISTEMA_PROPRIO || !l.na_vitrine;
+    var volta = $('#voltar-vitrine'); if (volta) volta.classList.toggle('oculto', proprio);
+    var plat = $('#rodape-plataforma'); if (plat) plat.innerHTML = proprio ? 'Sistema próprio · tecnologia <b>RMD</b>' : 'Loja no <b>Pede Sul</b> · desenvolvido por RMD Delivery';
     $('#nome-loja').textContent = nome; $('#rodape-nome').textContent = nome;
     document.title = nome + ' | Cardápio e pedidos';
     $('#status-loja').textContent = estado.cardapio ? (l.aberto ? 'Aberto para pedidos' : 'Fechado no momento') : 'Cardápio online';

@@ -67,7 +67,8 @@
     if (COM_BANCO) {
       h += '<form id="form-login" data-tipo="banco"><div class="campo"><label for="l-usuario">Usuário ou e-mail do desenvolvedor</label><input id="l-usuario" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required maxlength="120"></div>' +
         '<div class="campo"><label for="l-senha">Senha</label><input id="l-senha" type="password" required autocomplete="current-password"></div>' +
-        '<button class="btn btn-ouro btn-bloco" type="submit">Entrar</button></form></div>';
+        '<button class="btn btn-ouro btn-bloco" type="submit">Entrar</button></form>' +
+        '<p style="text-align:center;margin:12px 0 0"><button class="btn btn-linha btn-peq" type="button" data-acao="esqueci-senha">Esqueci minha senha</button></p></div>';
     } else {
       var criar = !lerL(CHAVE_SENHA);
       h += '<div class="aviso-caixa">Modo demonstração: a senha e as lojas ficam só neste navegador.</div>' +
@@ -80,8 +81,29 @@
     var f = $('#conteudo input'); if (f) f.focus();
   }
 
+  // volta do link "Esqueci minha senha" (o código vem depois do # no endereço)
+  function lerVoltaDoLink() {
+    var h = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+    if (h.get('error_description')) return { erro: h.get('error_description') };
+    if (h.get('type') === 'recovery' && h.get('access_token')) return { token: h.get('access_token') };
+    return null;
+  }
+  function limparEndereco() { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; } }
+  function telaNovaSenha(token, msg) {
+    $('#btn-sair').classList.add('oculto');
+    $('#conteudo').innerHTML = '<div class="login caixa"><h2>Criar senha nova</h2>' + (msg ? '<div class="erro-caixa">' + esc(msg) + '</div>' : '') +
+      '<p style="font-size:14px;color:var(--texto-2)">Digite a senha nova da sua conta de desenvolvedor (pelo menos 6 caracteres). Ela vale também no administrador do RMD Ponto, que usa a mesma conta.</p>' +
+      '<form id="form-nova-senha" data-token="' + esc(token) + '"><div class="campo"><label for="ns-1">Senha nova</label><input id="ns-1" type="password" required minlength="6" maxlength="72" autocomplete="new-password"></div>' +
+      '<div class="campo"><label for="ns-2">Repita a senha nova</label><input id="ns-2" type="password" required minlength="6" maxlength="72" autocomplete="new-password"></div>' +
+      '<button class="btn btn-ouro btn-bloco" type="submit">Salvar senha e entrar</button></form></div>';
+    var f = $('#ns-1'); if (f) f.focus();
+  }
+
   async function iniciar() {
     if (COM_BANCO) {
+      var volta = lerVoltaDoLink();
+      if (volta && volta.erro) { limparEndereco(); return telaLogin('O link de troca de senha não vale mais (expirou ou já foi usado). Toque em "Esqueci minha senha" de novo.'); }
+      if (volta && volta.token) return telaNovaSenha(volta.token);
       if (!api.sessao()) return telaLogin();
       var sou = false;
       try { sou = await api.souRmd(); } catch (e) { if (e.codigo === 'REDE') return telaLogin(e.message); }
@@ -386,6 +408,18 @@
     if (!el) return;
     var a = el.dataset.acao;
     if (a === 'sair') { if (COM_BANCO) await api.sair(); else marcarLogado(false); telaLogin(); }
+    else if (a === 'esqueci-senha') {
+      var em = ($('#l-usuario') && $('#l-usuario').value.trim()) || '';
+      if (em.indexOf('@') < 0) em = (prompt('Qual é o e-mail da sua conta de desenvolvedor?') || '').trim();
+      if (em.indexOf('@') < 0) return;
+      el.disabled = true;
+      try {
+        await api.recuperarSenha(em, location.origin + location.pathname);
+        telaLogin();
+        $('#conteudo .login').insertAdjacentHTML('afterbegin', '<div class="aviso-caixa" role="status">Pronto! Se <b>' + esc(em) + '</b> for de desenvolvedor, chega um e-mail em alguns minutos com o link para criar a senha nova. ' +
+          'Olhe também a caixa de lixo eletrônico (spam). Abra o link neste mesmo aparelho.</div>');
+      } catch (e) { el.disabled = false; alert(/rate|seconds|too many/i.test(e.message) ? 'Espere 1 minuto antes de pedir outro e-mail.' : e.message); }
+    }
     else if (a === 'aba') { st.aba = el.dataset.aba; if (st.aba === 'parceiros') st.parceiros = null; if (st.aba === 'erros') st.erros = null; render(); }
     else if (a === 'erros-todos') { st.errosTodos = el.checked; st.erros = null; render(); }
     else if (a === 'erros-recarregar') { st.erros = null; render(); }
@@ -425,6 +459,18 @@
   document.addEventListener('submit', async function (ev) {
     var f = ev.target;
     ev.preventDefault();
+    if (f.id === 'form-nova-senha') {
+      var s1 = $('#ns-1').value, s2 = $('#ns-2').value, tk = f.dataset.token;
+      if (s1.length < 6) return telaNovaSenha(tk, 'A senha precisa ter pelo menos 6 caracteres.');
+      if (s1 !== s2) return telaNovaSenha(tk, 'As duas senhas não são iguais.');
+      try {
+        var u = await api.novaSenhaComCodigo(tk, s1);
+        limparEndereco();
+        await api.entrar(u.email, s1);
+        toast('Senha nova salva. Bem-vindo!');
+        return iniciar();
+      } catch (e) { if (e.codigo === 'AUTH' && /expirou|já foi usado/.test(e.message)) { limparEndereco(); return telaLogin(e.message); } return telaNovaSenha(tk, e.message); }
+    }
     if (f.id === 'form-login') {
       try {
         if (f.dataset.tipo === 'banco') { await api.entrar($('#l-usuario').value.trim(), $('#l-senha').value); return iniciar(); }

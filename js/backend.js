@@ -222,6 +222,27 @@
     if (s) { try { await this._auth('logout', {}, s.access_token); } catch (e) { /* já saiu neste aparelho */ } }
   };
   BackendSupabase.prototype.sessao = function () { return this._sessao(); };
+  // Esqueci minha senha (desenvolvedor, 22/11/2026): a nuvem manda um link para o e-mail; o link volta para esta página
+  // com um código de uso único, e a PRÓPRIA pessoa digita a senha nova. O site nunca vê nem guarda a senha antiga.
+  BackendSupabase.prototype.recuperarSenha = function (email, voltarPara) {
+    return this._auth('recover?redirect_to=' + encodeURIComponent(voltarPara), { email: String(email || '').trim().toLowerCase() });
+  };
+  BackendSupabase.prototype.novaSenhaComCodigo = async function (token, senha) {
+    var resp;
+    try {
+      resp = await fetch(this.url + '/auth/v1/user', { method: 'PUT', headers: { apikey: this.chave, 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ password: senha }) });
+    } catch (e) { throw Erro('Sem conexão com o servidor. Verifique a internet.', 'REDE'); }
+    var j = await resp.json().catch(function () { return {}; });
+    if (!resp.ok) {
+      var msg = j.error_description || j.msg || j.message || 'Não foi possível trocar a senha.';
+      if (/expired|invalid|jwt/i.test(msg)) msg = 'O link expirou ou já foi usado. Toque em "Esqueci minha senha" de novo.';
+      else if (/at least|characters|weak/i.test(msg)) msg = 'A senha precisa ter pelo menos 6 caracteres.';
+      else if (/same|different/i.test(msg)) msg = 'Essa já é a sua senha. Pode entrar com ela.';
+      throw Erro(msg, 'AUTH');
+    }
+    return j;
+  };
   // trocarSenhaPendente: a loja já vende de verdade e a pessoa ainda está com a senha provisória (ex.: 1234)
   BackendSupabase.prototype.papel = async function () {
     var r = await this._daLoja('pedesul_eu');

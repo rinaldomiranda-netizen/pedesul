@@ -105,7 +105,7 @@
     var rec = l.recursos || {};
     var doCadastro = PLANOS.filter(function (pl) { return pl.id === l.plano; })[0];
     if (doCadastro && recursosBatem(doCadastro, rec)) return doCadastro.nome;
-    var r = PLANOS.filter(function (pl) { return recursosBatem(pl, rec); })[0];
+    var r = PLANOS.filter(function (pl) { return !pl.oculto && recursosBatem(pl, rec); })[0];
     return r ? r.nome : 'Personalizado';
   }
   // Cobrança do mês (só com o banco): pedidos e chamados de parceiro contados pelo banco, sem valores de venda.
@@ -113,6 +113,7 @@
     if (!COM_BANCO || l.pedidos_mes === undefined) return '';
     var real = l.modo === 'real', ped = real ? l.pedidos_mes : l.pedidos_mes_teste, cha = real ? l.chamadas_mes : l.chamadas_mes_teste;
     var v = window.RmdPlanos.valorDoMes(l.plano, ped, cha);
+    if (v.gratis) return '<p style="font-size:13px;margin:8px 0 0">🎁 <b>Cortesia da RMD:</b> loja grátis, nada a cobrar · ' + ped + ' pedido(s) neste mês.</p>';
     return '<p style="font-size:13px;margin:8px 0 0">💲 <b>Este mês' + (real ? '' : ' (loja em teste: nada a cobrar)') + ':</b> ' + ped + ' pedido(s) · ' + cha + ' chamado(s) de entregador parceiro' +
       ' · plano ' + N.reais(v.plano) + (v.chamadas ? ' + chamados ' + N.reais(v.chamadas) : '') + ' = <b>' + N.reais(real ? v.total : 0) + '</b>' +
       (window.RmdPlanos.MES_GRATIS ? ' <span style="color:var(--texto-2)">(lembre: o 1º mês é grátis)</span>' : '') + '</p>';
@@ -135,13 +136,14 @@
       '<div class="cartao-num"><span>Sistema individual</span><strong>' + (lojas.length - naVitrine) + '</strong></div>' +
       '<div class="cartao-num"><span>Suspensas</span><strong style="color:' + (lojas.some(function (l) { return !l.liberada; }) ? 'var(--erro)' : 'var(--ok)') + '">' + lojas.filter(function (l) { return !l.liberada; }).length + '</strong></div></div>';
     h += '<div class="barra-acoes"><a class="btn btn-linha btn-peq" href="index.html" target="_blank" rel="noopener">🏖️ Abrir a vitrine</a><a class="btn btn-linha btn-peq" href="vendas.html" target="_blank" rel="noopener">💼 Página de vendas</a></div>';
-    h += '<nav class="chips" aria-label="Partes da área do desenvolvedor">' + [['lojas', '🏪 Lojas'], ['parceiros', '🛵 Entregadores parceiros'], ['anuncios', '📣 Propagandas'], ['epocas', '🎉 Épocas'], ['planos', '💲 Planos e preços']].map(function (a) {
+    h += '<nav class="chips" aria-label="Partes da área do desenvolvedor">' + [['lojas', '🏪 Lojas'], ['parceiros', '🛵 Entregadores parceiros'], ['anuncios', '📣 Propagandas'], ['epocas', '🎉 Épocas'], ['erros', '🛠️ Erros do sistema'], ['planos', '💲 Planos e preços']].map(function (a) {
       return '<button type="button" class="chip' + (st.aba === a[0] ? ' agora' : '') + '" data-acao="aba" data-aba="' + a[0] + '" aria-pressed="' + (st.aba === a[0]) + '">' + a[1] + '</button>';
     }).join('') + '</nav>';
     if (st.aba === 'lojas') h += telaLojas(lojas);
     else if (st.aba === 'anuncios') h += telaAnuncios();
     else if (st.aba === 'epocas') h += telaEpocas();
     else if (st.aba === 'parceiros') h += telaParceiros();
+    else if (st.aba === 'erros') h += telaErros();
     else h += htmlPlanos() + '<div class="caixa"><h3 style="margin-top:0">Promoção de lançamento</h3><p style="font-size:14px;margin:0">Os ' + PROMO.vagas + ' primeiros levam o plano ' + esc(nomePlano(PROMO.plano)) + ' pelo preço do ' + esc(nomePlano(PROMO.pagaComo)) + ' (' + N.reais(PROMO.preco) + '/mês), e nos ' + PROMO.mesesMetade +
       ' primeiros meses ' + N.reais(PROMO.precoInicio) + '/mês. As inscrições da página de vendas vão para a lista da RMD no servidor e aparecem na área do desenvolvedor do Aterrisse.</p></div>';
     $('#conteudo').innerHTML = h;
@@ -248,6 +250,29 @@
   async function carregarParceiros() {
     try { st.parceiros = await api.rmdParceiros(); } catch (e) { st.parceiros = []; alert(e.message); }
     if (st.aba === 'parceiros') render();
+  }
+
+  // ---------------------------------------------------------------- erros do sistema (manutenção: o que deu errado em cada loja, sem vendas nem clientes)
+  // Cada página das lojas (cardápio, painel, cozinha, entregador) manda sozinha os erros para o banco (js/app.js); o banco tira e-mails e números longos.
+  function telaErros() {
+    if (!COM_BANCO) return '<div class="aviso-caixa">Os erros ficam guardados só no banco (site publicado). No modo demonstração não há servidor.</div>';
+    if (!st.erros) { carregarErros(); return '<p>Carregando…</p>'; }
+    var h = '<h2>Erros do sistema</h2><p style="font-size:14px;color:var(--texto-2)">Avisos que as páginas das lojas mandam sozinhas quando algo dá errado (tela travada, falha no servidor, função que não respondeu). ' +
+      'Aqui não aparecem vendas, valores nem dados de clientes: e-mails e números longos (telefone, documento) são apagados antes de guardar. Corrija e marque como resolvido; se voltar a acontecer, ele reaparece.</p>' +
+      '<div class="barra-acoes"><label class="chk"><input type="checkbox" data-acao="erros-todos"' + (st.errosTodos ? ' checked' : '') + '> Mostrar também os resolvidos</label>' +
+      '<button class="btn btn-linha btn-peq" type="button" data-acao="erros-recarregar">Atualizar</button></div>';
+    h += st.erros.length ? st.erros.map(function (x) {
+      return '<div class="caixa dev-loja" style="border-left:5px solid ' + (x.resolvido ? 'var(--ok)' : 'var(--erro)') + '"><div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:0"><b>' + esc(x.mensagem) + '</b><br><small style="color:var(--texto-2)">Loja <b>' + esc(x.loja || 'plataforma') + '</b> · página ' + esc(x.pagina) +
+        ' · ' + x.vezes + ' vez(es) · última: ' + esc(N.dataHora(x.ultimo_em)) + ' · primeira: ' + esc(N.dataHora(x.primeiro_em)) + '</small>' +
+        (x.detalhe ? '<pre style="white-space:pre-wrap;font-size:12px;margin:6px 0 0;color:var(--texto-2)">' + esc(x.detalhe) + '</pre>' : '') + '</div>' +
+        '<div><button class="btn btn-linha btn-peq" type="button" data-acao="erro-resolvido" data-id="' + esc(x.id) + '" data-valor="' + (x.resolvido ? '0' : '1') + '">' + (x.resolvido ? 'Reabrir' : '✔ Resolvido') + '</button></div></div></div>';
+    }).join('') : '<div class="vazio">Nenhum erro aberto. Tudo funcionando.</div>';
+    return h;
+  }
+  async function carregarErros() {
+    try { st.erros = await api.rmdErros(!!st.errosTodos); } catch (e) { st.erros = []; alert(e.message); }
+    if (st.aba === 'erros') render();
   }
 
   // ---------------------------------------------------------------- épocas (tema da vitrine que liga sozinho perto de cada festa)
@@ -361,7 +386,10 @@
     if (!el) return;
     var a = el.dataset.acao;
     if (a === 'sair') { if (COM_BANCO) await api.sair(); else marcarLogado(false); telaLogin(); }
-    else if (a === 'aba') { st.aba = el.dataset.aba; if (st.aba === 'parceiros') st.parceiros = null; render(); }
+    else if (a === 'aba') { st.aba = el.dataset.aba; if (st.aba === 'parceiros') st.parceiros = null; if (st.aba === 'erros') st.erros = null; render(); }
+    else if (a === 'erros-todos') { st.errosTodos = el.checked; st.erros = null; render(); }
+    else if (a === 'erros-recarregar') { st.erros = null; render(); }
+    else if (a === 'erro-resolvido') { try { await api.rmdErroResolvido(Number(el.dataset.id), el.dataset.valor === '1'); } catch (e) { alert(e.message); } st.erros = null; render(); }
     else if (a === 'editar') { st.editando = el.dataset.slug; render(); var f = $('#form-loja'); if (f) f.scrollIntoView({ block: 'start' }); }
     else if (a === 'cancelar') { st.editando = null; render(); }
     else if (a === 'plano') {

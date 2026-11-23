@@ -36,7 +36,7 @@
 
   function desenharPlanos() {
     var P = R.PROMOCAO;
-    $('#planos').innerHTML = R.PLANOS.map(function (pl) {
+    $('#planos').innerHTML = R.PLANOS.filter(function (pl) { return !pl.oculto; }).map(function (pl) {
       var promo = pl.id === P.plano && restam !== 0;
       return '<div class="caixa v-plano' + (promo ? ' v-plano-promo' : '') + '">' +
         (promo ? '<span class="selo-agora">PROMOÇÃO 5 PRIMEIROS</span>' : pl.destaque ? '<span class="selo-agora">MAIS INDICADO</span>' : '') +
@@ -52,7 +52,7 @@
     $('#nota-implantacao').innerHTML = (R.MES_GRATIS ? '<b>Primeiro mês grátis</b> em qualquer plano. ' : '') +
       '<b>Nenhum plano cobra porcentagem sobre as vendas</b>: a loja sabe quanto vai pagar. ' +
       '<b>Implantação (opcional, uma vez):</b> ' + N.reais(R.IMPLANTACAO) + ' — cadastro do cardápio, logo, QR Codes e treinamento da equipe.';
-    $('#i-plano').innerHTML = R.PLANOS.filter(function (pl) { return !pl.porPedido; }).map(function (pl) { return '<option value="' + pl.id + '"' + (pl.id === P.plano ? ' selected' : '') + '>' + esc(pl.nome) + ' (' + N.reais(pl.preco) + '/mês)</option>'; }).join('');
+    $('#i-plano').innerHTML = R.PLANOS.filter(function (pl) { return !pl.porPedido && !pl.oculto; }).map(function (pl) { return '<option value="' + pl.id + '"' + (pl.id === P.plano ? ' selected' : '') + '>' + esc(pl.nome) + ' (' + N.reais(pl.preco) + '/mês)</option>'; }).join('');
   }
 
   async function atualizarVagas() {

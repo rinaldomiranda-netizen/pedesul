@@ -27,7 +27,11 @@
     // Salão: só a organização DENTRO da loja (caixa, balcão, cozinha, mesas; o cliente pede pelo QR da mesa). Fica fora da vitrine.
     { id: 'salao', nome: 'Salão', preco: 59.90, anual: 599.00, para: 'Só a organização interna: balcão, cozinha e mesas', interno: true,
       itens: ['Caixa: abrir, vender no balcão, sangria e fechamento', 'Mesas e garçom, com conta da mesa', 'Cliente vê o cardápio e pede pelo QR Code da mesa', 'Tela da cozinha e comanda impressa', 'Cadastro de clientes e relatórios', 'Não recebe pedido de fora da loja (sem entrega e sem retirada)'],
-      recursos: { entrega: false, retirada: false, local: true, qrcode: true, post: true, cozinha: true, entregadores: false, oferta: false, caixa: true, mesas: true, clientes: true, relatorios: true, parceiros: false } }
+      recursos: { entrega: false, retirada: false, local: true, qrcode: true, post: true, cozinha: true, entregadores: false, oferta: false, caixa: true, mesas: true, clientes: true, relatorios: true, parceiros: false } },
+    // Cortesia (Rinaldo, 22/11/2026): loja que a RMD dá de graça (ex.: Êta Brownie). Tudo ligado, nada a cobrar. Não aparece na página de vendas.
+    { id: 'cortesia', nome: 'Cortesia RMD (grátis)', preco: 0, gratis: true, oculto: true, para: 'Loja que a RMD dá de presente: sem mensalidade e sem cobrança',
+      itens: ['Tudo do Entrega Total', 'Sem mensalidade', 'Chamados de entregador parceiro sem cobrança'],
+      recursos: { entrega: true, retirada: true, local: true, qrcode: true, post: true, cozinha: true, entregadores: true, oferta: true, caixa: true, mesas: true, clientes: true, relatorios: true, parceiros: true } }
   ];
   // Promoção de lançamento (decisão do Rinaldo, 27/10/2026): os 5 primeiros restaurantes inscritos levam o plano
   // mais completo (Entrega Total) pelo preço do Sistema e, nos 3 primeiros meses, pagam metade disso. Quem conta as vagas é o servidor
@@ -40,6 +44,7 @@
   // Quanto a loja paga no mês (para a área RMD). pedidos = pedidos do mês (sem cancelados); chamadas = chamados de parceiro aceitos.
   function valorDoMes(planoId, pedidos, chamadas) {
     var pl = PLANOS.filter(function (p) { return p.id === planoId; })[0];
+    if (pl && pl.gratis) return { plano: 0, chamadas: 0, total: 0, gratis: true };
     var fixo = pl ? (pl.porPedido ? Math.min(pl.teto, Math.round(pl.porPedido * (pedidos || 0) * 100) / 100) : pl.preco) : 0;
     var extra = Math.round(VALOR_CHAMADA * (chamadas || 0) * 100) / 100;
     return { plano: fixo, chamadas: extra, total: Math.round((fixo + extra) * 100) / 100 };

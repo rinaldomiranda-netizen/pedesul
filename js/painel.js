@@ -183,7 +183,7 @@
     if (aba === 'minhas') st.minhas = await api.minhasEntregas();
     if (aba === 'cardapio' || aba === 'horarios' || aba === 'loja' || aba === 'qrcode') st.adm = await api.cardapioCompleto();
     if (aba === 'loja') { try { st.entrega = await api.dadosEntrega(); } catch (e) { st.entrega = null; } }
-    if (aba === 'loja') { try { st.faixa = api.faixaLoja ? await api.faixaLoja() : null; } catch (e) { st.faixa = null; } }
+    if (aba === 'loja') { try { st.faixa = api.faixaPainel ? await api.faixaPainel() : (api.faixaLoja ? await api.faixaLoja() : null); st.faixaSalvos = {}; ((st.faixa && st.faixa.anuncios) || []).forEach(function (x) { if (x.id && x.codigo) st.faixaSalvos[x.id] = x.codigo; }); } catch (e) { st.faixa = null; } }
     if (aba === 'post') { st.cardPub = await api.cardapio(); try { st.adm = await api.cardapioCompleto(); } catch (e) { st.adm = null; } }
     if (aba === 'equipe') { st.entregadores = await api.listarEntregadores(); st.equipe = await api.listarEquipe(); }
     if (aba === 'caixa') { st.caixa = await api.caixa(); st.pedidos = await api.listarPedidos(2); if (!st.cardPub) st.cardPub = await api.cardapio(); }
@@ -719,8 +719,10 @@
         return '<div class="opcao-editor" style="grid-template-columns:1fr auto"><input type="text" data-pag="' + i + '" data-campo="nome" maxlength="40" value="' + esc(p.nome) + '" aria-label="Nome da forma de pagamento">' +
           '<label class="chk"><input type="checkbox" data-pag="' + i + '" data-campo="ativo"' + (p.ativo !== false ? ' checked' : '') + '> ativa</label></div>';
       }).join('') + '</div><div class="barra-acoes"><input class="entrada" id="novo-pag" maxlength="40" placeholder="Outra forma (ex.: Vale-refeição)"><button class="btn btn-linha btn-peq" type="button" data-acao="mais-pag">+ Adicionar</button></div></div>';
-    h += '<div class="caixa"><h3 style="margin-top:0">Pix do restaurante</h3><p style="font-size:13px;color:var(--texto-2)">O cardápio e o entregador mostram um QR Code com o valor do pedido para esta chave. O site não confirma pagamentos: a equipe ou o entregador marcam "recebido".</p>' +
-      '<div class="campo"><label for="lj-pixchave">Chave Pix (telefone, e-mail, CPF/CNPJ ou chave aleatória)</label><input id="lj-pixchave" maxlength="77" value="' + esc(l.pix_chave || '') + '"><span class="ajuda">Telefone: escreva com DDD, ex.: 79996899727. Vazio = sem QR do Pix.</span></div>' +
+    h += '<div class="caixa"><h3 style="margin-top:0">Pix da loja <span class="etiqueta">opcional</span></h3><p style="font-size:13px;color:var(--texto-2)">Você decide: se colocar a sua chave, o cardápio e o entregador mostram um QR Code com o valor do pedido para ela. ' +
+      'Se deixar vazio, não aparece QR: o cliente que escolher Pix paga na entrega/retirada ou combina com você pelo WhatsApp. Para não oferecer Pix, desmarque "ativa" no Pix em Formas de pagamento. ' +
+      'O site não confirma pagamentos: a equipe ou o entregador marcam "recebido".</p>' +
+      '<div class="campo"><label for="lj-pixchave">Chave Pix (telefone, e-mail, CPF/CNPJ ou chave aleatória) — opcional</label><input id="lj-pixchave" maxlength="77" placeholder="Deixe vazio se não quiser o QR do Pix" value="' + esc(l.pix_chave || '') + '"><span class="ajuda">Telefone: escreva com DDD, ex.: 71999999999. Vazio = sem QR do Pix. Depois toque em "Salvar configurações".</span></div>' +
       '<div class="linha-2"><div class="campo"><label for="lj-pixnome">Nome do recebedor</label><input id="lj-pixnome" maxlength="25" value="' + esc(l.pix_nome || '') + '"></div>' +
       '<div class="campo"><label for="lj-pixcidade">Cidade</label><input id="lj-pixcidade" maxlength="15" value="' + esc(l.pix_cidade || '') + '"></div></div></div>';
     h += '<div class="caixa"><div class="campo"><label for="lj-url">Endereço público do cardápio (para o QR Code)</label><input id="lj-url" maxlength="300" placeholder="https://…" value="' + esc(l.url_publica || '') + '"></div></div>';
@@ -745,11 +747,96 @@
     }).join('') + '</ul>';
   }
   function corParceiro(a) { return /^#[0-9a-fA-F]{6}$/.test(a.cor || '') ? a.cor : '#5b3a8f'; }
+  // cobrança do parceiro (pedidos do Rinaldo, 22/11/2026): a dona cobra quem anuncia no cardápio dela. Tabela de preços (valor por dia
+  // e pacotes); ela escolhe os dias e o valor sai sozinho; manda a proposta pelo WhatsApp com um link; o parceiro toca "Aceito" e a
+  // propaganda entra no ar sozinha nas datas (anuncio.html). Só ela vê valores e contatos; o cardápio não recebe.
+  var SITUACOES = [['aceita', '✅ No ar (aceita)'], ['proposta', '⏳ Proposta enviada: esperando o ok do parceiro'], ['recusada', '⛔ Fora do ar (recusada ou pausada)']];
+  function valorTexto(v) { return v === null || v === undefined || v === '' ? '' : Number(v).toFixed(2).replace('.', ','); }
+  function numero(v) { var n = Number(String(v === null || v === undefined ? '' : v).replace(/[^0-9,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); return isFinite(n) ? n : 0; }
+  function hojeIso() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function somarDias(iso, n) { var p = iso.split('-').map(Number), d = new Date(p[0], p[1] - 1, p[2] + n); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function dataBrIso(iso) { return iso ? iso.split('-').reverse().join('/') : ''; }
+  function precoDias(dias) { return window.AterrisseBackend.precoPorDias((st.faixa && st.faixa.anuncio_precos) || {}, dias); }
+  function telefoneWa(c) { c = String(c || '').replace(/\D/g, ''); if (c.length === 10 || c.length === 11) c = '55' + c; return c; }
+  function salvoNoServidor(a) { return !!(st.faixaSalvos && a.id && a.codigo && st.faixaSalvos[a.id] === a.codigo); }
+  function linkProposta(a) {
+    var base = location.href.replace(/painel\.html.*$/, '').replace(/[?#].*$/, '');
+    return base + 'anuncio.html?loja=' + encodeURIComponent(api.loja) + '&a=' + encodeURIComponent(a.id) + '&c=' + encodeURIComponent(a.codigo) + (window.ATERRISSE_CONFIG && window.ATERRISSE_CONFIG.VITRINE ? '&demo=1' : '');
+  }
+  function lojaNome() { return (st.adm && st.adm.loja && st.adm.loja.nome) || 'nossa loja'; }
+  function waProposta(a) {
+    var c = telefoneWa(a.contato), v = numero(a.valor);
+    if (!c || !(v > 0) || !salvoNoServidor(a)) return '';
+    var periodo = a.inicio && a.fim ? ' de ' + dataBrIso(a.inicio) + ' a ' + dataBrIso(a.fim) : '';
+    var msg = 'Olá' + (a.anunciante ? ', ' + a.anunciante : '') + '! Aqui é da ' + lojaNome() + '. Proposta para a sua propaganda "' + (a.titulo || '') + '" no nosso cardápio: ' +
+      (a.dias ? a.dias + ' dia(s)' : '') + periodo + ', valor ' + N.reais(v) + '. Para aceitar (ou não), toque no link: ' + linkProposta(a);
+    return 'https://wa.me/' + c + '?text=' + encodeURIComponent(msg);
+  }
+  function waCobrar(a) {
+    var c = telefoneWa(a.contato), v = numero(a.valor);
+    if (!c || !(v > 0)) return '';
+    var msg = 'Olá' + (a.anunciante ? ', ' + a.anunciante : '') + '! Aqui é da ' + lojaNome() + '. Sua propaganda "' + (a.titulo || '') + '" está no nosso cardápio' +
+      (a.inicio && a.fim ? ' (' + dataBrIso(a.inicio) + ' a ' + dataBrIso(a.fim) + ')' : '') + '. Valor combinado: ' + N.reais(v) + '. Obrigada pela parceria!';
+    return 'https://wa.me/' + c + '?text=' + encodeURIComponent(msg);
+  }
+  function htmlCobrancaParceiro(a) {
+    var prop = waProposta(a), cobrar = waCobrar(a), v = numero(a.valor);
+    var resposta = a.respondido_em ? '<span class="ajuda">Parceiro respondeu em ' + esc(N.dataHora(a.respondido_em)) + ': ' + (a.situacao === 'aceita' ? '<b>aceitou</b>' : '<b>não aceitou</b>') + '.</span>' : '';
+    return '<details class="lf-cobranca"' + (v > 0 || a.dias ? ' open' : '') + '><summary><b>💰 Valor e proposta deste parceiro</b> <span class="ajuda" style="display:inline">(só você vê)</span>' +
+      (v > 0 ? ' · ' + N.reais(v) + ' ' + (a.pago ? '<span class="etiqueta" style="background:#1f8a4c;color:#fff">pago</span>' : '<span class="etiqueta" style="background:#b3261e;color:#fff">a receber</span>') : '') + '</summary>' +
+      '<div class="linha-2"><div class="campo"><label>Quantos dias no ar</label><input type="number" min="1" max="366" data-an-campo="dias" data-calc="dias" placeholder="Ex.: 15, 30, 60" value="' + esc(a.dias || '') + '">' +
+      '<span class="ajuda">O valor e a data final saem sozinhos pela tabela de preços.</span></div>' +
+      '<div class="campo"><label>Valor (R$)</label><input data-an-campo="valor" inputmode="decimal" maxlength="10" placeholder="Ex.: 30,00" value="' + esc(valorTexto(a.valor)) + '">' +
+      '<span class="ajuda">Pode mudar à mão se quiser dar desconto.</span></div></div>' +
+      '<div class="linha-2"><div class="campo"><label>WhatsApp do parceiro</label><input data-an-campo="contato" inputmode="tel" maxlength="16" placeholder="71999999999" value="' + esc(a.contato || '') + '"></div>' +
+      '<div class="campo"><label>Anotação</label><input data-an-campo="obs" maxlength="120" placeholder="Ex.: paga no Pix" value="' + esc(a.obs || '') + '"></div></div>' +
+      '<input type="hidden" data-an-campo="cobranca" value="periodo"><input type="hidden" data-an-campo="codigo" value="' + esc(a.codigo || '') + '"><input type="hidden" data-an-campo="respondido_em" value="' + esc(a.respondido_em || '') + '">' +
+      resposta + '<div class="barra-acoes" style="margin:6px 0 0;flex-wrap:wrap">' +
+      '<label class="chk"><input type="checkbox" data-an-campo="pago"' + (a.pago ? ' checked' : '') + '> Já pagou</label>' +
+      (prop && a.situacao === 'proposta' ? '<a class="btn btn-ouro btn-peq" href="' + esc(prop) + '" target="_blank" rel="noopener">📲 Enviar proposta no WhatsApp</a>' : '') +
+      (cobrar && a.situacao === 'aceita' && !a.pago ? '<a class="btn btn-linha btn-peq" href="' + esc(cobrar) + '" target="_blank" rel="noopener">📲 Lembrar o pagamento</a>' : '') + '</div>' +
+      (a.situacao === 'proposta' && !prop ? '<span class="ajuda">Para enviar a proposta: preencha dias, valor e WhatsApp do parceiro e toque em "Salvar faixa de propaganda". Depois aparece o botão.</span>' : '') +
+      '</details>';
+  }
+  function htmlResumoCobranca(lista) {
+    var com = (lista || []).filter(function (a) { return numero(a.valor) > 0; });
+    if (!com.length) return '';
+    var receber = 0, recebido = 0, esperando = 0;
+    com.forEach(function (a) { if (a.situacao === 'proposta') esperando++; else if (a.situacao === 'aceita') { if (a.pago) recebido += numero(a.valor); else receber += numero(a.valor); } });
+    return '<div class="cartoes"><div class="cartao-num"><span>Propostas esperando o ok</span><strong>' + esperando + '</strong></div>' +
+      '<div class="cartao-num"><span>A receber</span><strong style="color:var(--erro)">' + N.reais(receber) + '</strong></div>' +
+      '<div class="cartao-num"><span>Já recebido</span><strong style="color:var(--ok)">' + N.reais(recebido) + '</strong></div></div>';
+  }
+  function htmlTabelaPrecos(p) {
+    p = p || {};
+    var pk = function (d) { var x = (p.pacotes || []).filter(function (y) { return Number(y.dias) === d; })[0]; return x ? valorTexto(x.valor) : ''; };
+    return '<div class="caixa"><h3 style="margin-top:0">Tabela de preços das propagandas</h3><p class="ajuda" style="margin-top:-4px">Coloque quanto cobra por dia. Nos pacotes, um preço fechado (pode ser com desconto); vazio = dias × valor do dia.</p>' +
+      '<div class="linha-2"><div class="campo"><label for="fx-dia">Valor por dia (R$)</label><input id="fx-dia" inputmode="decimal" maxlength="10" placeholder="Ex.: 2,00" value="' + esc(valorTexto(p.dia)) + '"></div>' +
+      '<div class="campo"><label for="fx-p15">Pacote 15 dias (R$)</label><input id="fx-p15" inputmode="decimal" maxlength="10" value="' + esc(pk(15)) + '"></div></div>' +
+      '<div class="linha-2"><div class="campo"><label for="fx-p30">Pacote 30 dias (R$)</label><input id="fx-p30" inputmode="decimal" maxlength="10" value="' + esc(pk(30)) + '"></div>' +
+      '<div class="campo"><label for="fx-p60">Pacote 60 dias (R$)</label><input id="fx-p60" inputmode="decimal" maxlength="10" value="' + esc(pk(60)) + '"></div></div></div>';
+  }
+  function lerTabelaPrecos() {
+    if (!$('#fx-dia')) return (st.faixa && st.faixa.anuncio_precos) || { dia: null, pacotes: [] };
+    var t = function (id) { var v = $(id).value.trim(); return v === '' ? null : numero(v); };
+    return { dia: t('#fx-dia'), pacotes: [[15, '#fx-p15'], [30, '#fx-p30'], [60, '#fx-p60']].filter(function (x) { return t(x[1]) !== null; }).map(function (x) { return { dias: x[0], valor: t(x[1]) }; }) };
+  }
+  // ao digitar os dias (ou mudar a data de início): data final e valor saem sozinhos
+  function recalcularAnuncio(caixa) {
+    var d = caixa.querySelector('[data-an-campo="dias"]'), dias = Math.round(Number(d && d.value));
+    if (!(dias >= 1)) return;
+    st.faixa.anuncio_precos = lerTabelaPrecos();
+    var ini = caixa.querySelector('[data-an-campo="inicio"]'), fimEl = caixa.querySelector('[data-an-campo="fim"]'), val = caixa.querySelector('[data-an-campo="valor"]');
+    if (!ini.value) ini.value = hojeIso();
+    fimEl.value = somarDias(ini.value, dias - 1);
+    var v = precoDias(dias);
+    if (v !== null) val.value = valorTexto(v);
+  }
   function htmlAnuncioParceiro(a, i) {
-    var img = a.imagem_url || '';
+    var img = a.imagem_url || '', sit = a.situacao || (a.ativo === false ? 'recusada' : 'aceita');
     return '<div class="caixa lf-anuncio" data-an="' + i + '" style="border-left:5px solid ' + esc(corParceiro(a)) + '">' +
-      '<div class="barra-acoes" style="justify-content:space-between;margin:0 0 6px"><b>Propaganda ' + (i + 1) + '</b>' +
-      '<span><label class="chk"><input type="checkbox" data-an-campo="ativo"' + (a.ativo !== false ? ' checked' : '') + '> no ar</label> ' +
+      '<div class="barra-acoes" style="justify-content:space-between;margin:0 0 6px;flex-wrap:wrap"><b>Propaganda ' + (i + 1) + '</b>' +
+      '<span><select data-an-campo="situacao" aria-label="Situação da propaganda">' + SITUACOES.map(function (x) { return '<option value="' + x[0] + '"' + (sit === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select> ' +
       '<button class="btn btn-linha btn-peq" type="button" data-acao="faixa-tirar" data-i="' + i + '">Tirar</button></span></div>' +
       '<div class="campo"><label>Título *</label><input data-an-campo="titulo" maxlength="60" placeholder="Ex.: Açaí da Dona Maria" value="' + esc(a.titulo || '') + '"></div>' +
       '<div class="campo"><label>Texto</label><input data-an-campo="texto" maxlength="120" placeholder="Ex.: 10% de desconto mostrando esta tela" value="' + esc(a.texto || '') + '"></div>' +
@@ -760,8 +847,9 @@
       (img ? '<span class="ajuda"><img src="' + esc(img) + '" alt="" style="height:54px;border-radius:8px;vertical-align:middle"> foto escolhida · <button class="btn btn-linha btn-peq" type="button" data-acao="faixa-sem-foto" data-i="' + i + '">sem foto</button></span>'
         : '<span class="ajuda">Sem foto, a propaganda usa a cor escolhida.</span>') +
       '<input type="hidden" data-an-campo="imagem_url" value="' + esc(img) + '"></div>' +
-      '<div class="linha-2"><div class="campo"><label>Começa em (opcional)</label><input type="date" data-an-campo="inicio" value="' + esc(a.inicio || '') + '"></div>' +
-      '<div class="campo"><label>Termina em (opcional)</label><input type="date" data-an-campo="fim" value="' + esc(a.fim || '') + '"></div></div>' +
+      '<div class="linha-2"><div class="campo"><label>Começa em</label><input type="date" data-an-campo="inicio" data-calc="inicio" value="' + esc(a.inicio || '') + '"></div>' +
+      '<div class="campo"><label>Termina em</label><input type="date" data-an-campo="fim" value="' + esc(a.fim || '') + '"></div></div>' +
+      htmlCobrancaParceiro(Object.assign({}, a, { situacao: sit })) +
       '<input type="hidden" data-an-campo="id" value="' + esc(a.id || '') + '"></div>';
   }
   function telaFaixa() {
@@ -775,7 +863,10 @@
       return '<option value="' + u[0] + '"' + ((f.regiao || '') === u[0] ? ' selected' : '') + '>' + esc(u[1]) + '</option>'; }).join('') + '</select>' +
       '<span class="ajuda">Perto de cada festa o cardápio muda sozinho de cores e ganha enfeites (Carnaval, São João, Dia das Mães, Dia dos Pais, Natal...). Próximas:</span></div>' +
       '<div id="fx-festas">' + htmlProximasFestas(f.regiao) + '</div></div>';
-    h += '<h3>Propagandas de parceiros</h3><p class="ajuda" style="margin-top:-6px">Ex.: uma lojinha amiga que quer aparecer no seu cardápio. Até 8.</p><div id="faixa-lista">' +
+    h += '<h3>Propagandas de parceiros</h3><p class="ajuda" style="margin-top:-6px">Ex.: uma lojinha amiga que quer aparecer no seu cardápio. Até 8. ' +
+      'Você pode cobrar de cada parceiro: escolha os dias, o valor sai pela tabela, envie a proposta pelo WhatsApp e, quando ele tocar "Aceito", a propaganda entra no ar sozinha. ' +
+      'O dinheiro é seu, direto com o parceiro; os clientes do cardápio não veem valores.</p>' +
+      htmlTabelaPrecos(f.anuncio_precos) + htmlResumoCobranca(f.anuncios) + '<div id="faixa-lista">' +
       (f.anuncios || []).map(htmlAnuncioParceiro).join('') + '</div>' +
       '<div class="barra-acoes"><button class="btn btn-linha" type="button" data-acao="faixa-mais">+ Adicionar propaganda de parceiro</button></div>' +
       (f.indisponivel ? '<p class="faixa faixa-aviso">Para salvar parceiros e região nesta loja, a RMD ainda precisa ligar esta função no servidor.</p>' : '') +
@@ -786,6 +877,7 @@
     var f = st.faixa || { anuncios: [] };
     if ($('#fx-auto')) f.faixa_auto = $('#fx-auto').checked;
     if ($('#fx-regiao')) f.regiao = $('#fx-regiao').value || null;
+    f.anuncio_precos = lerTabelaPrecos();
     f.anuncios = Array.prototype.map.call(document.querySelectorAll('#faixa-lista .lf-anuncio'), function (caixa) {
       var a = {};
       caixa.querySelectorAll('[data-an-campo]').forEach(function (el) { a[el.dataset.anCampo] = el.type === 'checkbox' ? el.checked : el.value.trim(); });
@@ -1240,7 +1332,7 @@
       lerFaixa();
       if (a === 'faixa-mais') {
         if (st.faixa.anuncios.length >= 8) { alert('No máximo 8 propagandas de parceiros.'); return; }
-        st.faixa.anuncios.push({ titulo: '', texto: '', anunciante: '', link: '', imagem_url: '', cor: '#5b3a8f', ativo: true });
+        st.faixa.anuncios.push({ titulo: '', texto: '', anunciante: '', link: '', imagem_url: '', cor: '#5b3a8f', situacao: 'proposta', ativo: false, inicio: hojeIso() });
       } else if (a === 'faixa-tirar') {
         if (!confirm('Tirar esta propaganda? (só vale depois de salvar)')) return;
         st.faixa.anuncios.splice(Number(el.dataset.i), 1);
@@ -1452,6 +1544,7 @@
   });
 
   document.addEventListener('input', function (ev) {
+    if (ev.target.dataset && ev.target.dataset.calc && ev.target.closest('.lf-anuncio')) { recalcularAnuncio(ev.target.closest('.lf-anuncio')); return; }
     if (ev.target.id === 'montar-busca' && montar) {
       montar.busca = ev.target.value;
       var pos0 = ev.target.selectionStart;

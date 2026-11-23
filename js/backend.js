@@ -36,6 +36,54 @@
   var DOMINIO_CONTAS = 'pedesul.invalid';
   // Confere a faixa de propaganda da loja antes de salvar (até 8 propagandas de parceiros).
   var REGIOES = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
+  // cobrança da propaganda do parceiro: é da dona da loja (o cardápio público não recebe estes campos)
+  function valorCobranca(v, i) {
+    if (v === null || v === undefined || String(v).trim() === '') return null;
+    var n = Number(String(v).replace(/[^0-9,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+    if (!isFinite(n) || n < 0 || n > 100000) throw Erro(i < 0 ? 'Tabela de preços: valor inválido.' : 'Propaganda ' + (i + 1) + ': valor inválido.', 'FAIXA_INVALIDA');
+    return Math.round(n * 100) / 100;
+  }
+  function contatoCobranca(c, i) {
+    var d = String(c || '').replace(/\D/g, '');
+    if (!d) return null;
+    if (d.length === 10 || d.length === 11) d = '55' + d;
+    if (d.length < 12 || d.length > 13) throw Erro('Propaganda ' + (i + 1) + ': WhatsApp do parceiro com DDD, ex.: 71999999999.', 'FAIXA_INVALIDA');
+    return d;
+  }
+  function diasCobranca(v, i) {
+    if (v === null || v === undefined || String(v).trim() === '') return null;
+    var n = Math.round(Number(v));
+    if (!(n >= 1 && n <= 366)) throw Erro('Propaganda ' + (i + 1) + ': dias de 1 a 366.', 'FAIXA_INVALIDA');
+    return n;
+  }
+  function novoCodigo() {
+    var c = '', b = new Uint8Array(16), abc = 'abcdefghijkmnpqrstuvwxyz23456789';
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(b); else for (var k = 0; k < 16; k++) b[k] = Math.floor(Math.random() * 256);
+    for (var j = 0; j < 16; j++) c += abc[b[j] % abc.length];
+    return c;
+  }
+  // tabela de preços: valor por dia + pacotes (ex.: 15, 30, 60 dias com preço fechado)
+  function limparPrecos(p) {
+    p = p || {};
+    var dia = valorCobranca(p.dia, -1);
+    var pacotes = (Array.isArray(p.pacotes) ? p.pacotes : []).map(function (x) {
+      var dias = Math.round(Number(x && x.dias)), valor = valorCobranca(x && x.valor, -1);
+      return dias >= 1 && dias <= 366 && valor !== null ? { dias: dias, valor: valor } : null;
+    }).filter(Boolean).slice(0, 6);
+    return { dia: dia, pacotes: pacotes };
+  }
+  // valor de N dias pela tabela: pacote com o mesmo número de dias; senão, dias × valor do dia
+  function precoPorDias(tabela, dias) {
+    dias = Math.round(Number(dias));
+    if (!(dias >= 1)) return null;
+    var pk = ((tabela && tabela.pacotes) || []).filter(function (x) { return Number(x.dias) === dias; })[0];
+    if (pk) return Number(pk.valor);
+    var dia = tabela && Number(tabela.dia);
+    return dia > 0 ? Math.round(dia * dias * 100) / 100 : null;
+  }
+  var CAMPOS_COBRANCA = ['valor', 'cobranca', 'contato', 'pago', 'obs', 'dias', 'situacao', 'codigo', 'respondido_em'];
+  function anuncioPublico(a) { var r = {}; Object.keys(a).forEach(function (k) { if (CAMPOS_COBRANCA.indexOf(k) < 0) r[k] = a[k]; }); return r; }
+
   function limparFaixa(d) {
     d = d || {};
     var lista = Array.isArray(d.anuncios) ? d.anuncios : [];
@@ -50,11 +98,16 @@
       if (img && !/^(https:\/\/[^\s"'<>]{4,500}|assets\/[a-zA-Z0-9_\/.-]{3,120}|data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]{20,700000})$/.test(img)) throw Erro('Propaganda ' + (i + 1) + ': imagem inválida.', 'FAIXA_INVALIDA');
       var ini = /^\d{4}-\d{2}-\d{2}$/.test(a.inicio || '') ? a.inicio : null, fim = /^\d{4}-\d{2}-\d{2}$/.test(a.fim || '') ? a.fim : null;
       if (ini && fim && fim < ini) throw Erro('Propaganda ' + (i + 1) + ': a data final vem antes da inicial.', 'FAIXA_INVALIDA');
+      var situacao = ['proposta', 'aceita', 'recusada'].indexOf(a.situacao) >= 0 ? a.situacao : (a.ativo === false ? 'recusada' : 'aceita');
       return { id: /^[a-z0-9-]{3,40}$/.test(a.id || '') ? a.id : 'pa-' + Date.now().toString(36) + i, titulo: titulo, texto: texto || null, anunciante: anunciante || null,
-        link: link || null, imagem_url: img || null, cor: /^#[0-9a-fA-F]{6}$/.test(a.cor || '') ? a.cor : '#5b3a8f', inicio: ini, fim: fim, ativo: a.ativo !== false };
+        link: link || null, imagem_url: img || null, cor: /^#[0-9a-fA-F]{6}$/.test(a.cor || '') ? a.cor : '#5b3a8f', inicio: ini, fim: fim,
+        situacao: situacao, ativo: situacao === 'aceita', dias: diasCobranca(a.dias, i), codigo: /^[a-z0-9]{10,32}$/.test(a.codigo || '') ? a.codigo : novoCodigo(),
+        respondido_em: a.respondido_em || null,
+        valor: valorCobranca(a.valor, i), cobranca: a.cobranca === 'periodo' ? 'periodo' : 'mes', contato: contatoCobranca(a.contato, i),
+        pago: a.pago === true, obs: String(a.obs || '').replace(/\s+/g, ' ').trim().slice(0, 120) || null };
     });
     var regiao = REGIOES.indexOf(String(d.regiao || '').toUpperCase()) >= 0 ? String(d.regiao).toUpperCase() : null;
-    return { anuncios: anuncios, regiao: regiao, faixa_auto: d.faixa_auto !== false };
+    return { anuncios: anuncios, regiao: regiao, faixa_auto: d.faixa_auto !== false, anuncio_precos: limparPrecos(d.anuncio_precos) };
   }
 
   function escolher(obj, campos) {
@@ -195,6 +248,13 @@
   BackendSupabase.prototype.faixaLoja = function () {
     return this._daLoja('pedesul_faixa_loja').catch(function () { return { anuncios: [], regiao: null, faixa_auto: true, indisponivel: true }; });
   };
+  // painel da dona: todas as propagandas, com a cobrança (sem a atualização 007 no banco, usa a leitura pública)
+  BackendSupabase.prototype.faixaPainel = function () {
+    var eu = this;
+    return this._daLoja('pedesul_faixa_painel').catch(function () { return eu.faixaLoja(); });
+  };
+  BackendSupabase.prototype.verProposta = function (id, codigo) { return this._daLoja('pedesul_ver_proposta', { p_id: id, p_codigo: codigo }); };
+  BackendSupabase.prototype.responderProposta = function (id, codigo, aceita) { return this._daLoja('pedesul_responder_proposta', { p_id: id, p_codigo: codigo, p_aceita: !!aceita }); };
   BackendSupabase.prototype.salvarFaixa = function (d) { return this._daLoja('pedesul_salvar_faixa', { d: limparFaixa(d) }); };
   BackendSupabase.prototype.salvarEntrega = function (d) { return this._daLoja('pedesul_salvar_entrega', { d: escolher(d, ['taxas_bairro', 'endereco']) }); };
 
@@ -606,17 +666,40 @@
   };
   // faixa de propaganda da loja (demonstração: guardada neste aparelho; sem nada salvo, vale o que veio nos dados da loja)
   BackendDemo.prototype.faixaLoja = async function () {
+    var f = await this.faixaPainel(), hoje = new Date().toISOString().slice(0, 10);
+    f.anuncios = f.anuncios.filter(function (a) { return a.ativo !== false && (!a.inicio || a.inicio <= hoje) && (!a.fim || a.fim >= hoje); }).map(anuncioPublico);
+    return f;
+  };
+  BackendDemo.prototype.faixaPainel = async function () {
     var e = this._estado(), base = null;
     if (e.loja.anuncios === undefined || e.loja.regiao === undefined) { try { base = DadosDemo.criar(this.loja, e.loja.nome).loja; } catch (x) { base = {}; } }
     return {
       anuncios: copia(e.loja.anuncios !== undefined ? e.loja.anuncios : (base.anuncios || [])),
       regiao: e.loja.regiao !== undefined ? e.loja.regiao : (base.regiao || null),
-      faixa_auto: e.loja.faixa_auto !== undefined ? e.loja.faixa_auto : (base.faixa_auto !== false)
+      faixa_auto: e.loja.faixa_auto !== undefined ? e.loja.faixa_auto : (base.faixa_auto !== false),
+      anuncio_precos: copia(e.loja.anuncio_precos || { dia: null, pacotes: [] })
     };
+  };
+  BackendDemo.prototype._proposta = function (e, id, codigo) {
+    var a = (e.loja.anuncios || []).filter(function (x) { return x.id === id && x.codigo && x.codigo === codigo; })[0];
+    if (!a) throw Erro('Proposta não encontrada. Peça um link novo à loja.', 'PROPOSTA_INEXISTENTE');
+    return a;
+  };
+  BackendDemo.prototype.verProposta = async function (id, codigo) {
+    var e = this._estado(), a = this._proposta(e, id, codigo);
+    return { loja: { nome: e.loja.nome, logo_url: e.loja.logo_url, cor: e.loja.cor, whatsapp: e.loja.whatsapp },
+      anuncio: { titulo: a.titulo, texto: a.texto, anunciante: a.anunciante, imagem_url: a.imagem_url, cor: a.cor, inicio: a.inicio, fim: a.fim, dias: a.dias, valor: a.valor, cobranca: a.cobranca, situacao: a.situacao || 'aceita' } };
+  };
+  BackendDemo.prototype.responderProposta = async function (id, codigo, aceita) {
+    var e = this._estado(), a = this._proposta(e, id, codigo);
+    if (a.situacao !== 'proposta') throw Erro('Esta proposta já foi respondida.', 'PROPOSTA_RESPONDIDA');
+    a.situacao = aceita ? 'aceita' : 'recusada'; a.ativo = !!aceita; a.respondido_em = new Date().toISOString();
+    this._gravar(e);
+    return { situacao: a.situacao };
   };
   BackendDemo.prototype.salvarFaixa = async function (d) {
     this._exigirLogin(); var e = this._estado(), f = limparFaixa(d);
-    e.loja.anuncios = f.anuncios; e.loja.regiao = f.regiao; e.loja.faixa_auto = f.faixa_auto;
+    e.loja.anuncios = f.anuncios; e.loja.regiao = f.regiao; e.loja.faixa_auto = f.faixa_auto; e.loja.anuncio_precos = f.anuncio_precos;
     this._auditar(e, 'faixa'); this._gravar(e);
   };
   // taxa por bairro e endereço de retirada (demonstração: guardados neste aparelho)
@@ -985,5 +1068,5 @@
     return new BackendDemo(undefined, undefined, { vitrine: !!cfg.VITRINE, loja: cfg.LOJA });
   }
 
-  return { criar: criar, BackendSupabase: BackendSupabase, BackendDemo: BackendDemo, Erro: Erro, OCORRENCIAS: OCORRENCIAS, limparFaixa: limparFaixa };
+  return { criar: criar, BackendSupabase: BackendSupabase, BackendDemo: BackendDemo, Erro: Erro, OCORRENCIAS: OCORRENCIAS, limparFaixa: limparFaixa, precoPorDias: precoPorDias, anuncioPublico: anuncioPublico };
 });

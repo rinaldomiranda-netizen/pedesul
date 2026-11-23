@@ -95,7 +95,8 @@
       '<p style="font-size:14px;color:var(--texto-2)">Digite a senha nova da sua conta de desenvolvedor (pelo menos 6 caracteres). Ela vale também no administrador do RMD Ponto, que usa a mesma conta.</p>' +
       '<form id="form-nova-senha" data-token="' + esc(token) + '"><div class="campo"><label for="ns-1">Senha nova</label><input id="ns-1" type="password" required minlength="6" maxlength="72" autocomplete="new-password"></div>' +
       '<div class="campo"><label for="ns-2">Repita a senha nova</label><input id="ns-2" type="password" required minlength="6" maxlength="72" autocomplete="new-password"></div>' +
-      '<button class="btn btn-ouro btn-bloco" type="submit">Salvar senha e entrar</button></form></div>';
+      '<button class="btn btn-ouro btn-bloco" type="submit">Salvar senha e entrar</button></form>' +
+      (api.sessao() && !lerVoltaDoLink() ? '<p style="text-align:center;margin:12px 0 0"><button class="btn btn-linha btn-peq" type="button" data-acao="voltar-area">Voltar sem trocar</button></p>' : '') + '</div>';
     var f = $('#ns-1'); if (f) f.focus();
   }
 
@@ -151,7 +152,8 @@
   function render() {
     var lojas = st.lojas;
     var naVitrine = lojas.filter(function (l) { return l.vitrine; }).length;
-    var h = '<div class="aviso-caixa">Área técnica da plataforma: lojas, liberação, vitrine, recursos e propagandas. Vendas, pedidos e clientes são de cada loja e não aparecem aqui.</div>';
+    var h = '<div class="aviso-caixa">Área técnica da plataforma: lojas, liberação, vitrine, recursos e propagandas. Vendas, pedidos e clientes são de cada loja e não aparecem aqui.</div>' +
+      (COM_BANCO ? '<p style="text-align:right;margin:6px 0"><button class="btn btn-linha btn-peq" type="button" data-acao="trocar-senha">🔑 Trocar minha senha</button></p>' : '');
     if (st.erro) h += '<div class="erro-caixa" role="alert">' + esc(st.erro) + '</div>';
     h += '<div class="cartoes-resumo"><div class="cartao-num"><span>Lojas</span><strong>' + lojas.length + '</strong></div>' +
       '<div class="cartao-num"><span>Na vitrine Pede Sul</span><strong>' + naVitrine + '</strong></div>' +
@@ -408,6 +410,12 @@
     if (!el) return;
     var a = el.dataset.acao;
     if (a === 'sair') { if (COM_BANCO) await api.sair(); else marcarLogado(false); telaLogin(); }
+    else if (a === 'trocar-senha') {
+      var tkn = await api._token();
+      if (!tkn) return telaLogin('Sua entrada venceu. Entre de novo ou use "Esqueci minha senha".');
+      telaNovaSenha(tkn);
+    }
+    else if (a === 'voltar-area') { iniciar(); }
     else if (a === 'esqueci-senha') {
       var em = ($('#l-usuario') && $('#l-usuario').value.trim()) || '';
       if (em.indexOf('@') < 0) em = (prompt('Qual é o e-mail da sua conta de desenvolvedor?') || '').trim();

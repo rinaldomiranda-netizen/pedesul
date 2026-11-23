@@ -141,12 +141,31 @@
       ' · plano ' + N.reais(v.plano) + (v.chamadas ? ' + chamados ' + N.reais(v.chamadas) : '') + ' = <b>' + N.reais(real ? v.total : 0) + '</b>' +
       (window.RmdPlanos.MES_GRATIS ? ' <span style="color:var(--texto-2)">(lembre: o 1º mês é grátis)</span>' : '') + '</p>';
   }
+  // Enviar o acesso ao dono (pedido do Rinaldo, 22/11/2026): mensagem pronta com os links do sistema da loja.
+  // Lojas com endereço próprio usam o endereço delas; as outras, o link de sistema próprio no Pede Sul. Sem senha na mensagem.
+  var ENDERECO_PROPRIO = { etabrownie: 'https://rmd-etabrownie.github.io/', litoral: 'https://rmd-litoral.github.io/', 'conis-burger': 'https://rmd-conis.github.io/', aterrisse: 'https://rmd-aterrisse.github.io/' };
+  function mensagemAcesso(l) {
+    var base = location.href.replace(/rmd\.html.*$/, '').replace(/[?#].*$/, ''), proprio = ENDERECO_PROPRIO[l.slug];
+    var q = '?loja=' + encodeURIComponent(l.slug);
+    var link = function (pag) { return proprio ? proprio + (pag === 'loja.html' ? '' : pag) : base + pag + q + (pag === 'loja.html' ? '&proprio=1' : ''); };
+    return 'Olá! Aqui é o Rinaldo, da RMD. O sistema da ' + l.nome + ' está pronto' + (l.plano === 'cortesia' ? ', de cortesia (sem mensalidade)' : '') + ':\n\n' +
+      '📱 Cardápio para os clientes (mande no Instagram e no WhatsApp):\n' + link('loja.html') + '\n\n' +
+      '🖥️ Seu painel (pedidos, cardápio, preços, Pix, equipe e propagandas):\n' + link('painel.html') + '\nUsuário: dono\n\n' +
+      '👩‍🍳 Cozinha: ' + link('cozinha.html') + '\n' +
+      '🛵 Entregador: ' + link('entregador.html') + '\n' +
+      'Os usuários da equipe (caixa, cozinha, entregador) estão no seu painel, em "Equipe".\n\n' +
+      'A senha provisória eu te mando na próxima mensagem. No painel, em "Equipe", você troca as senhas e cria mais pessoas.\n' +
+      'Para virar aplicativo no celular: abra o link no Chrome, toque nos 3 pontinhos e em "Instalar app" (ou "Adicionar à tela inicial").\n' +
+      'Qualquer dúvida, me chame!';
+  }
   function linksDa(l) {
     var base = location.href.replace(/rmd\.html.*$/, '');
     var q = '?loja=' + encodeURIComponent(l.slug);
     return [['📱 Cardápio', 'loja.html'], ['🖥️ Painel', 'painel.html'], ['👨‍🍳 Cozinha', 'cozinha.html'], ['🛵 Entregador', 'entregador.html']].map(function (x) {
       return '<a class="btn btn-linha btn-peq" href="' + esc(base + x[1] + q) + '" target="_blank" rel="noopener">' + x[0] + '</a>';
-    }).join('');
+    }).join('') +
+      '<a class="btn btn-ouro btn-peq" href="' + esc('https://wa.me/?text=' + encodeURIComponent(mensagemAcesso(l))) + '" target="_blank" rel="noopener">📲 Enviar acesso ao dono</a>' +
+      '<button class="btn btn-linha btn-peq" type="button" data-acao="copiar-acesso" data-slug="' + esc(l.slug) + '">📋 Copiar mensagem</button>';
   }
 
   function render() {
@@ -410,6 +429,13 @@
     if (!el) return;
     var a = el.dataset.acao;
     if (a === 'sair') { if (COM_BANCO) await api.sair(); else marcarLogado(false); telaLogin(); }
+    else if (a === 'copiar-acesso') {
+      var lj = st.lojas.filter(function (x) { return x.slug === el.dataset.slug; })[0];
+      if (!lj) return;
+      var txt = mensagemAcesso(lj);
+      try { await navigator.clipboard.writeText(txt); toast('Mensagem copiada. Cole no WhatsApp da pessoa.'); }
+      catch (e) { prompt('Copie a mensagem:', txt); }
+    }
     else if (a === 'trocar-senha') {
       var tkn = await api._token();
       if (!tkn) return telaLogin('Sua entrada venceu. Entre de novo ou use "Esqueci minha senha".');

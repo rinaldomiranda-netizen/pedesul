@@ -158,13 +158,23 @@
       'Para virar aplicativo no celular: abra o link no Chrome, toque nos 3 pontinhos e em "Instalar app" (ou "Adicionar à tela inicial").\n' +
       'Qualquer dúvida, me chame!';
   }
+  // Rinaldo quer mandar pelo WhatsApp NORMAL, não pelo Business (22/11/2026).
+  // Android: abre direto o app com.whatsapp (se não tiver, abre a página do WhatsApp). Computador: abre o WhatsApp Desktop (whatsapp://).
+  function linkWhatsNormal(texto) {
+    var t = encodeURIComponent(texto);
+    if (/Android/i.test(navigator.userAgent)) {
+      return 'intent://send?text=' + t + '#Intent;scheme=whatsapp;package=com.whatsapp;S.browser_fallback_url=' + encodeURIComponent('https://wa.me/?text=' + t) + ';end';
+    }
+    if (/iPhone|iPad/i.test(navigator.userAgent)) return 'https://wa.me/?text=' + t;
+    return 'whatsapp://send?text=' + t;
+  }
   function linksDa(l) {
     var base = location.href.replace(/rmd\.html.*$/, '');
     var q = '?loja=' + encodeURIComponent(l.slug);
     return [['📱 Cardápio', 'loja.html'], ['🖥️ Painel', 'painel.html'], ['👨‍🍳 Cozinha', 'cozinha.html'], ['🛵 Entregador', 'entregador.html']].map(function (x) {
       return '<a class="btn btn-linha btn-peq" href="' + esc(base + x[1] + q) + '" target="_blank" rel="noopener">' + x[0] + '</a>';
     }).join('') +
-      '<a class="btn btn-ouro btn-peq" href="' + esc('https://wa.me/?text=' + encodeURIComponent(mensagemAcesso(l))) + '" target="_blank" rel="noopener">📲 Enviar acesso ao dono</a>' +
+      '<a class="btn btn-ouro btn-peq" href="' + esc(linkWhatsNormal(mensagemAcesso(l))) + '" rel="noopener">📲 Enviar acesso ao dono</a>' +
       '<button class="btn btn-linha btn-peq" type="button" data-acao="copiar-acesso" data-slug="' + esc(l.slug) + '">📋 Copiar mensagem</button>';
   }
 

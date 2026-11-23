@@ -338,3 +338,18 @@ img { max-width: 100%; display: block; }
 @media (prefers-reduced-motion: reduce) { .v-an-arte.com-logo { animation: none !important; } }
 .lf-festas { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
 .lf-festas li { background: rgba(255,255,255,.04); border: 1px solid var(--linha); border-radius: 10px; padding: 7px 10px; }
+
+/* ---- ajuste para celular estreito (pedido do Rinaldo, 22/11/2026) ----
+   O texto escondido de leitor de tela (.sr) dentro dos botões de categoria escapava da barra e alargava a página
+   (em celular de 360 px a página ficava com 400 px): o card do produto e a barra da sacola passavam da tela.
+   Agora a barra de categorias segura o texto escondido, e a página nunca fica mais larga que a tela. */
+.chips, .chip { position: relative; }
+.sr { left: 0; top: 0; margin: -1px; padding: 0; border: 0; }
+html { overflow-x: clip; }
+.janela { max-width: min(560px, 100vw); }
+/* esgotado: preço e selo cabem no cartão estreito, sem cortar a palavra */
+.produto-rodape { flex-wrap: wrap; row-gap: 6px; }
+.produto.esgotado .btn-add { font-size: 11px !important; padding: 6px 10px !important; min-height: 32px !important; white-space: nowrap; }
+@media (max-width: 380px) { .produto.esgotado .btn-add { font-size: 10px !important; padding: 5px 8px !important; } }
+.selos-janela { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.selos-janela .selo-foto { position: static; }

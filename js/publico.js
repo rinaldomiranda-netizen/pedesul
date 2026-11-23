@@ -338,7 +338,12 @@
 
   function htmlProduto() {
     var p = escolha.produto;
-    var h = '<div class="janela-cab"><div><h2 id="janela-titulo">' + esc(p.nome) + '</h2><div style="color:var(--texto-2);font-size:14px">' + esc(p.descricao || '') + '</div>' +
+    var h = '<div class="janela-cab"><div><h2 id="janela-titulo">' + esc(p.nome) + '</h2>' + (function () {
+        var sl = lerSelos(p.descricao); // promoção e "mais vendido" viram selos, igual ao cartão (22/11/2026)
+        return (sl.promo || sl.vendido ? '<div class="selos-janela">' + (sl.promo ? '<span class="selo-foto selo-promo">Promoção</span> <s class="preco-antigo">R$ ' + esc(sl.promo) + '</s> ' : '') +
+          (sl.vendido ? '<span class="selo-foto selo-vendido">+ Vendido</span>' : '') + '</div>' : '') +
+          '<div style="color:var(--texto-2);font-size:14px">' + esc(sl.texto || '') + '</div>';
+      })() +
       (p.demonstracao ? '<span class="etiqueta etiqueta-demo" style="margin-top:6px">Exemplo · preço a confirmar</span>' : '') +
       '</div><button class="fechar" type="button" data-acao="fechar" aria-label="Fechar">×</button></div>';
     (p.grupos || []).forEach(function (g) {

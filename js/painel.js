@@ -105,6 +105,17 @@
     var f = $('#conteudo input'); if (f) f.focus();
   }
 
+  function telaOutroPapel(papel) {
+    var s = api.sessao() || {}, nome = s.usuario || N.usuarioVisivel(s.email || '');
+    var destino = papel === 'entregador' ? 'entregador.html' : 'cozinha.html';
+    $('#btn-sair').classList.remove('oculto');
+    $('#quem').textContent = nome + ' · ' + NOMES_PAPEL[papel];
+    $('#conteudo').innerHTML = '<div class="login caixa"><h2>' + (TELA_COZINHA ? 'Cozinha' : 'Painel da loja') + '</h2>' +
+      '<p>Neste aparelho você está dentro como <b>' + esc(nome) + '</b> (' + esc(NOMES_PAPEL[papel]) + '). Essa conta não abre ' + (TELA_COZINHA ? 'a cozinha' : 'o painel da loja') + '.</p>' +
+      '<button class="btn btn-ouro btn-bloco" type="button" data-acao="sair">Entrar com outro usuário (ex.: dono)</button>' +
+      '<p style="text-align:center;margin:14px 0 0"><a class="btn btn-linha" href="' + esc(comLoja(destino)) + '">Abrir a tela ' + (papel === 'entregador' ? 'do entregador' : 'da cozinha') + '</a></p></div>';
+  }
+
   async function iniciar() {
     renderFaixas();
     if (!api.sessao()) return telaLogin();
@@ -120,8 +131,10 @@
     }
     if (api.trocarSenhaPendente) { $('#btn-sair').classList.remove('oculto'); return telaNovaSenha(); }
     if (api.vitrine && TELA_COZINHA) st.papel = 'cozinha'; // demonstração: a tela da cozinha age como a conta da cozinha
-    if (st.papel === 'entregador') { location.href = comLoja('entregador.html'); return; }
-    if (st.papel === 'cozinha' && !TELA_COZINHA) { location.href = comLoja('cozinha.html'); return; }
+    // A entrada fica guardada no aparelho e vale para todas as telas da loja (painel, cozinha, entregador).
+    // Antes, quem tinha entrado como entregador/cozinha era mandado para a tela dele sem aviso e o dono não achava o painel
+    // (relato do Rinaldo no tablet, 27/11/2026). Agora avisa e deixa trocar de usuário aqui mesmo.
+    if (st.papel === 'entregador' || (st.papel === 'cozinha' && !TELA_COZINHA)) return telaOutroPapel(st.papel);
     try { st.lojaPub = (await api.cardapio()).loja; } catch (e) { /* sem conexão: segue com o padrão */ }
     aplicarMarcaLoja();
     renderFaixas();

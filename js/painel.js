@@ -1148,7 +1148,7 @@
         '<form id="form-membro"><div class="linha-2"><div class="campo"><label for="m-nome">Nome</label><input id="m-nome" required minlength="2" maxlength="80"></div>' +
         '<div class="campo"><label for="m-papel">Papel</label><select id="m-papel">' + Object.keys(NOMES_PAPEL).map(function (p) { return '<option value="' + p + '"' + (p === 'atendente' ? ' selected' : '') + '>' + NOMES_PAPEL[p] + '</option>'; }).join('') + '</select></div></div>' +
         '<div class="linha-2"><div class="campo"><label for="m-usuario">Usuário</label><input id="m-usuario" required minlength="3" maxlength="30" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ex.: maria"><span class="ajuda">Sem acento e sem espaço.</span></div>' +
-        '<div class="campo"><label for="m-senha">Senha</label><input id="m-senha" type="text" required minlength="4" maxlength="72" autocomplete="new-password" value="' + (st.lojaPub && st.lojaPub.modo === 'real' ? '' : SENHA_TESTE) + '"><span class="ajuda">' + (st.lojaPub && st.lojaPub.modo === 'real' ? 'Loja vendendo de verdade: 8 ou mais, com letras e números. A pessoa cria a definitiva no primeiro acesso.' : 'Loja em teste: senha ' + SENHA_TESTE + '. A definitiva é pedida quando a loja vender de verdade.') + '</span></div></div>' +
+        '<div class="campo"><label for="m-senha">Senha</label><input id="m-senha" type="password" required minlength="4" maxlength="72" autocomplete="new-password" value="' + (st.lojaPub && st.lojaPub.modo === 'real' ? '' : SENHA_TESTE) + '"><span class="ajuda">' + (st.lojaPub && st.lojaPub.modo === 'real' ? 'Loja vendendo de verdade: 8 ou mais, com letras e números. A pessoa cria a definitiva no primeiro acesso.' : 'Loja em teste: a senha inicial padrão já vem preenchida. A definitiva é pedida quando a loja vender de verdade.') + '</span></div></div>' +
         '<button class="btn btn-ouro btn-peq" type="submit">Criar acesso</button></form></div>';
     }
     h += '<div class="caixa"><h3 style="margin-top:0">Entregadores</h3>' + (st.entregadores.length ? st.entregadores.map(function (e) {
@@ -1510,8 +1510,9 @@
     }
     else if (a === 'trocar-senha') {
       var real = !!(st.lojaPub && st.lojaPub.modo === 'real');
-      var nova = prompt('Nova senha para ' + el.dataset.nome + (real ? ' (8 ou mais, com letras e números; a pessoa cria a definitiva no próximo acesso):' : ' (loja em teste: pode ser ' + SENHA_TESTE + '):'), real ? '' : SENHA_TESTE);
+      var nova = prompt('Nova senha para ' + el.dataset.nome + (real ? ' (8 ou mais, com letras e números; a pessoa cria a definitiva no próximo acesso):' : ' (loja em teste: deixe em branco para usar a senha inicial padrão):'), '');
       if (nova === null) return;
+      if (!real && nova === '') nova = SENHA_TESTE;
       if (erroSenha(nova, real)) { alert(erroSenha(nova, real)); return; }
       await tentar(function () { return api.trocarSenha(id, nova); }, 'Senha trocada. Passe a senha nova para a pessoa.');
     }

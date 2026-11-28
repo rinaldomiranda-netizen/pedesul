@@ -242,7 +242,7 @@
     h += '<form class="form-acesso barra-acoes" data-slug="' + esc(l.slug) + '" style="flex-wrap:wrap">' +
       '<input class="entrada" name="nome" required minlength="2" maxlength="80" placeholder="Nome" aria-label="Nome">' +
       '<input class="entrada" name="usuario" required minlength="3" maxlength="30" placeholder="Usuário (ex.: dono)" aria-label="Usuário" autocapitalize="none" spellcheck="false">' +
-      '<input class="entrada" name="senha" required minlength="4" maxlength="72" placeholder="Senha" aria-label="Senha" autocomplete="new-password" value="' + (l.modo === 'real' ? '' : SENHA_TESTE) + '">' +
+      '<input class="entrada" name="senha" type="password" required minlength="4" maxlength="72" placeholder="Senha" aria-label="Senha" autocomplete="new-password" value="' + (l.modo === 'real' ? '' : SENHA_TESTE) + '">' +
       '<select name="papel" aria-label="Papel"><option value="admin">Dono (administrador)</option><option value="atendente">Atendente</option><option value="caixa">Caixa</option><option value="garcom">Garçom</option><option value="cozinha">Cozinha</option><option value="entregador">Entregador</option></select>' +
       '<button class="btn btn-ouro btn-peq" type="submit">Criar acesso</button></form></details>';
     return h;
@@ -295,7 +295,7 @@
     h += '<form class="form-acesso caixa" data-slug="rmd-parceiros"><h3 style="margin-top:0">+ Novo entregador parceiro</h3>' +
       '<div class="barra-acoes" style="flex-wrap:wrap"><input class="entrada" name="nome" required minlength="2" maxlength="80" placeholder="Nome" aria-label="Nome">' +
       '<input class="entrada" name="usuario" required minlength="3" maxlength="30" placeholder="Usuário (ex.: zemoto)" aria-label="Usuário" autocapitalize="none" spellcheck="false">' +
-      '<input class="entrada" name="senha" required minlength="4" maxlength="72" placeholder="Senha" aria-label="Senha" autocomplete="new-password" value="' + SENHA_TESTE + '">' +
+      '<input class="entrada" name="senha" type="password" required minlength="4" maxlength="72" placeholder="Senha" aria-label="Senha" autocomplete="new-password" value="' + SENHA_TESTE + '">' +
       '<input type="hidden" name="papel" value="entregador"><button class="btn btn-ouro btn-peq" type="submit">Criar acesso</button></div>' +
       '<p style="font-size:12px;color:var(--texto-2);margin:6px 0 0">Antes de liberar, confira os documentos do motoboy (CNH, moto). Anote o telefone dele em "Telefone".</p></form>';
     return h;
@@ -478,8 +478,9 @@
       toast('Recursos do plano ' + pl.nome + ' marcados. Confira e toque em Salvar.');
     }
     else if (a === 'senha-membro') {
-      var nova = prompt('Nova senha para ' + el.dataset.nome + ' (provisória; no teste: ' + SENHA_TESTE + '):', SENHA_TESTE);
+      var nova = prompt('Nova senha para ' + el.dataset.nome + ' (provisória; deixe em branco para usar a senha inicial padrão):', '');
       if (nova === null) return;
+      if (nova === '') nova = SENHA_TESTE;
       try { await api.trocarSenha(el.dataset.id, nova, el.dataset.slug); toast('Senha trocada. Passe a senha nova para a pessoa.'); } catch (e) { alert(e.message); }
     }
     else if (a === 'parceiro-ativo') {
@@ -557,7 +558,7 @@
     } else if (f.classList.contains('form-acesso')) {
       var d = { loja: f.dataset.slug, nome: f.elements.nome.value.trim(), usuario: N.normalizarUsuario(f.elements.usuario.value), senha: f.elements.senha.value, papel: f.elements.papel.value };
       if (!/^[a-z0-9._-]{3,30}$/.test(d.usuario)) { alert('Usuário com 3 a 30 letras ou números, sem acento e sem espaço.'); return; }
-      if (d.senha.length < 4) { alert('A senha precisa ter pelo menos 4 caracteres (no teste: ' + SENHA_TESTE + '). Com a loja vendendo de verdade, a pessoa cria a definitiva no primeiro acesso.'); return; }
+      if (d.senha.length < 4) { alert('A senha precisa ter pelo menos 4 caracteres. Com a loja vendendo de verdade, a pessoa cria a definitiva no primeiro acesso.'); return; }
       try {
         await api.criarAcesso(d);
         alert('Acesso criado.\n\nLoja: ' + d.loja + '\nUsuário: ' + d.usuario + '\nSenha: a que você digitou\n\nEntrada: ' + location.href.replace(/rmd\.html.*$/, '') + (d.loja === 'rmd-parceiros' ? 'parceiro.html' : (d.papel === 'entregador' ? 'entregador' : d.papel === 'cozinha' ? 'cozinha' : 'painel') + '.html?loja=' + d.loja));
